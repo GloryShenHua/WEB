@@ -1,16 +1,15 @@
-# ===== Node / React / Angular =====
+# ===== Node / Angular =====
 node_modules/
 dist/
 build/
 .angular/
 .cache/
 *.local
-
-# Vite
 *.tsbuildinfo
 
 # Angular build output
 frontend/dist/
+frontend/.angular/
 
 # ===== Java / Spring Boot =====
 backend/target/
