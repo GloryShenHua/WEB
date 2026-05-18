@@ -1,0 +1,84 @@
+<div class="h-screen flex flex-col bg-slate-950 text-white overflow-hidden">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between px-5 py-3 bg-slate-900 border-b border-slate-700 flex-shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-bold">λ</div>
+      <div>
+        <h1 class="font-bold text-white leading-none">算法与复杂度可视化学习平台</h1>
+        <p class="text-xs text-slate-500 leading-none mt-0.5">Angular + Spring Boot</p>
+      </div>
+    </div>
+
+    <nav class="flex gap-1">
+      <button
+        *ngFor="let tab of tabs"
+        (click)="store.setActivePanel(tab.id)"
+        [class]="store.activePanel() === tab.id
+          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
+          : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800'">
+        {{ tab.icon }} {{ tab.label }}
+      </button>
+    </nav>
+  </header>
+
+  <!-- Error Banner -->
+  <div *ngIf="store.error()" class="bg-red-900/80 border-b border-red-700 px-5 py-2 text-sm text-red-200 flex items-center justify-between">
+    <span>⚠ {{ store.error() }}</span>
+    <button (click)="store.error.set(null)" class="text-red-400 hover:text-white ml-4">✕</button>
+  </div>
+
+  <!-- Main layout -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar -->
+    <app-sidebar *ngIf="store.activePanel() === 'visualizer'" />
+
+    <!-- Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- History Panel -->
+      <app-history-panel *ngIf="store.activePanel() === 'history'" />
+
+      <!-- Visualizer -->
+      <ng-container *ngIf="store.activePanel() === 'visualizer'">
+
+        <!-- Control Panel -->
+        <app-control-panel />
+
+        <!-- Input Config -->
+        <app-input-config />
+
+        <!-- Complexity Analysis Panel -->
+        <app-complexity-panel />
+
+        <!-- Loading -->
+        <div *ngIf="store.isLoading()" class="flex-1 flex items-center justify-center">
+          <div class="flex flex-col items-center gap-3 text-slate-400">
+            <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-sm">正在计算算法步骤...</span>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!store.isLoading() && store.steps().length === 0" class="flex-1 flex items-center justify-center">
+          <div class="text-center text-slate-500">
+            <div class="text-5xl mb-4">⚡</div>
+            <p class="text-lg font-medium text-slate-400 mb-1">选择算法并点击「运行」</p>
+            <p class="text-sm">后端将计算步骤并返回可视化数据</p>
+          </div>
+        </div>
+
+        <!-- Visualizers -->
+        <ng-container *ngIf="!store.isLoading() && store.steps().length > 0">
+          <app-sorting-visualizer   *ngIf="store.category() === 'sorting'" />
+          <app-graph-visualizer     *ngIf="store.category() === 'graph'" />
+          <app-search-visualizer    *ngIf="store.category() === 'search'" />
+          <app-dp-visualizer        *ngIf="store.category() === 'dp'" />
+          <app-n-queens-visualizer  *ngIf="store.category() === 'backtracking'" />
+        </ng-container>
+
+      </ng-container>
+    </main>
+  </div>
+</div>
