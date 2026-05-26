@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { AlgorithmId } from '../../models/algorithm.models';
@@ -60,9 +60,22 @@ export class SidebarComponent {
     },
   ];
 
+  compareSiblings = computed(() => {
+    const cat = this.store.category();
+    const allItems = this.groups.flatMap(g => g.items);
+    return allItems.filter(item => {
+      const itemCat = this.store.getCategoryForAlgo(item.id);
+      return itemCat === cat && item.id !== this.store.selectedAlgo();
+    });
+  });
+
   constructor(public store: AlgorithmStore) {}
 
   select(id: AlgorithmId): void {
     this.store.setAlgorithm(id);
+  }
+
+  selectCompare(id: AlgorithmId): void {
+    this.store.compareAlgo.set(id);
   }
 }

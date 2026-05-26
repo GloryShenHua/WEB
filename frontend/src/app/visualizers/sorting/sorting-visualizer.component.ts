@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { SortStep } from '../../models/algorithm.models';
@@ -10,7 +10,14 @@ import { SortStep } from '../../models/algorithm.models';
   templateUrl: './sorting-visualizer.component.html',
 })
 export class SortingVisualizerComponent {
-  step = computed(() => this.store.currentStepData() as SortStep | null);
+  @Input() source: 'primary' | 'compare' = 'primary';
+
+  step = computed(() => {
+    const data = this.source === 'primary'
+      ? this.store.currentStepData()
+      : this.store.compareCurrentStepData();
+    return data as SortStep | null;
+  });
 
   constructor(public store: AlgorithmStore) {}
 

@@ -17,6 +17,7 @@ public class GraphStep {
     private double pathLength;
     private int comparisons;
     private Double mstCost;
+    private String phase;
 
     public static Builder builder() { return new Builder(); }
 
@@ -35,6 +36,7 @@ public class GraphStep {
         public Builder pathLength(double v) { s.pathLength = v; return this; }
         public Builder comparisons(int v) { s.comparisons = v; return this; }
         public Builder mstCost(Double v) { s.mstCost = v; return this; }
+        public Builder phase(String v) { s.phase = v; return this; }
         public GraphStep build() { return s; }
     }
 
@@ -51,5 +53,6 @@ public class GraphStep {
     public double getPathLength() { return pathLength; }
     public int getComparisons() { return comparisons; }
     public Double getMstCost() { return mstCost; }
+    public String getPhase() { return phase; }
 }
 

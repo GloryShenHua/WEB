@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { GraphStep, GraphNode, GraphEdge } from '../../models/algorithm.models';
@@ -16,7 +16,14 @@ interface RenderNode extends GraphNode { state: string; }
   templateUrl: './graph-visualizer.component.html',
 })
 export class GraphVisualizerComponent {
-  step = computed(() => this.store.currentStepData() as GraphStep | null);
+  @Input() source: 'primary' | 'compare' = 'primary';
+
+  step = computed(() => {
+    const data = this.source === 'primary'
+      ? this.store.currentStepData()
+      : this.store.compareCurrentStepData();
+    return data as GraphStep | null;
+  });
 
   nodes = computed<RenderNode[]>(() => {
     const s = this.step();

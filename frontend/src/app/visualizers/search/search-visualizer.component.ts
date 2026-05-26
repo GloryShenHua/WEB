@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { SearchStep } from '../../models/algorithm.models';
@@ -10,7 +10,14 @@ import { SearchStep } from '../../models/algorithm.models';
   templateUrl: './search-visualizer.component.html',
 })
 export class SearchVisualizerComponent {
-  step = computed(() => this.store.currentStepData() as SearchStep | null);
+  @Input() source: 'primary' | 'compare' = 'primary';
+
+  step = computed(() => {
+    const data = this.source === 'primary'
+      ? this.store.currentStepData()
+      : this.store.compareCurrentStepData();
+    return data as SearchStep | null;
+  });
 
   constructor(public store: AlgorithmStore) {}
 

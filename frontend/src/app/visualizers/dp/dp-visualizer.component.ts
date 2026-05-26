@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { DPStep } from '../../models/algorithm.models';
@@ -10,7 +10,14 @@ import { DPStep } from '../../models/algorithm.models';
   templateUrl: './dp-visualizer.component.html',
 })
 export class DpVisualizerComponent {
-  step = computed(() => this.store.currentStepData() as DPStep | null);
+  @Input() source: 'primary' | 'compare' = 'primary';
+
+  step = computed(() => {
+    const data = this.source === 'primary'
+      ? this.store.currentStepData()
+      : this.store.compareCurrentStepData();
+    return data as DPStep | null;
+  });
 
   currentItemInfo = computed(() => {
     const s = this.step();

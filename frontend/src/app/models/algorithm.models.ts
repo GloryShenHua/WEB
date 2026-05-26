@@ -34,6 +34,7 @@ export interface SortStep {
   mergeLeft?: number[];
   mergeRight?: number[];
   mergeTarget?: number;
+  phase: string;
 }
 
 // ===================== GRAPH =====================
@@ -78,6 +79,7 @@ export interface GraphStep {
   pathLength: number;
   comparisons: number;
   mstCost?: number;
+  phase: string;
 }
 
 // ===================== SEARCH =====================
@@ -92,6 +94,7 @@ export interface SearchStep {
   description: string;
   codeLine: number;
   comparisons: number;
+  phase: string;
 }
 
 // ===================== DP =====================
@@ -112,6 +115,7 @@ export interface DPStep {
   selectedItems: number[];
   tracePath: number[][];
   comparisons: number;
+  phase: string;
 }
 
 // ===================== BACKTRACKING =====================
@@ -128,6 +132,7 @@ export interface NQueensStep {
   backtracks: number;
   solutionsFound: number;
   solutions: number[][];
+  phase: string;
 }
 
 export type AnyStep = SortStep | GraphStep | SearchStep | DPStep | NQueensStep;
@@ -174,5 +179,23 @@ export interface AppState {
   knapsackCapacity: number;
   queensN: number;
 
-  activePanel: 'visualizer' | 'history';
+  activePanel: 'visualizer' | 'history' | 'assessment';
+}
+
+// ===================== TEST SCENARIOS =====================
+export type QuestionType = 'value-fill' | 'state-fill' | 'path-fill' | 'table-fill' | 'choice';
+
+export interface TestScenario {
+  id: number;
+  title: string;
+  category: AlgorithmCategory;
+  algorithm: AlgorithmId;
+  questionType: QuestionType;
+  description: string;
+  inputParams: Record<string, unknown>;
+  answer: unknown;
+  options?: string[];
+  explanation: string;
+  targetStepIndex?: number;
+  verifyField?: string;
 }

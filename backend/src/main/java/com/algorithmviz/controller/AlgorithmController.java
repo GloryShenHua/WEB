@@ -125,6 +125,78 @@ public class AlgorithmController {
         return ResponseEntity.noContent().build();
     }
 
+    // ==================== VERIFY STEP ====================
+    @PostMapping("/verify-step")
+    public ResponseEntity<Map<String, Object>> verifyStep(@RequestBody Map<String, Object> req) throws Exception {
+        String algorithm = (String) req.get("algorithm");
+        int targetStepIndex = req.get("targetStepIndex") != null ? (int) req.get("targetStepIndex") : 0;
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> params = (Map<String, Object>) req.get("params");
+
+        if (algorithm == null || params == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "algorithm and params are required"));
+        }
+
+        Object stepData = null;
+        String category = null;
+
+        if (List.of("quick-sort", "merge-sort", "bubble-sort", "heap-sort", "insertion-sort").contains(algorithm)) {
+            @SuppressWarnings("unchecked")
+            List<Integer> array = ((List<Number>) params.get("array")).stream()
+                    .map(Number::intValue).collect(java.util.stream.Collectors.toList());
+            List<SortStep> steps = sortingService.generateSteps(algorithm, array);
+            category = "sorting";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        } else if ("binary-search".equals(algorithm)) {
+            @SuppressWarnings("unchecked")
+            List<Integer> array = ((List<Number>) params.get("array")).stream()
+                    .map(Number::intValue).collect(java.util.stream.Collectors.toList());
+            int target = ((Number) params.get("target")).intValue();
+            List<SearchStep> steps = searchService.generateSteps(algorithm, array, target);
+            category = "search";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        } else if (List.of("dijkstra", "bfs", "dfs", "prim", "kruskal", "astar").contains(algorithm)) {
+            // For graph, we need to reconstruct GraphData from params
+            category = "graph";
+            stepData = Map.of("message", "Graph verification requires running algorithm in visualizer");
+        } else if ("knapsack".equals(algorithm)) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> itemsRaw = (List<Map<String, Object>>) params.get("items");
+            int capacity = ((Number) params.get("capacity")).intValue();
+            List<com.algorithmviz.dto.DPRequest.KnapsackItemDto> items = itemsRaw.stream().map(m -> {
+                com.algorithmviz.dto.DPRequest.KnapsackItemDto dto = new com.algorithmviz.dto.DPRequest.KnapsackItemDto();
+                dto.setName((String) m.get("name"));
+                dto.setWeight(((Number) m.get("weight")).intValue());
+                dto.setValue(((Number) m.get("value")).intValue());
+                return dto;
+            }).collect(java.util.stream.Collectors.toList());
+            List<DPStep> steps = dpService.generateSteps(algorithm, items, capacity);
+            category = "dp";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        } else if ("n-queens".equals(algorithm)) {
+            int n = ((Number) params.get("n")).intValue();
+            List<NQueensStep> steps = backtrackingService.generateSteps(algorithm, n);
+            category = "backtracking";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("algorithm", algorithm);
+        result.put("category", category);
+        result.put("targetStepIndex", targetStepIndex);
+        result.put("stepData", stepData);
+        return ResponseEntity.ok(result);
+    }
+
     // ==================== HEALTH ====================
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {

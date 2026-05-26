@@ -11,5 +11,6 @@
       "Bash(netstat:*)",
       "Bash(cmd:*)"
     ]
-  }
+  },
+  "outputStyle": "Explanatory"
 }
