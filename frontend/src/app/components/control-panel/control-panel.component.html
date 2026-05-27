@@ -2,10 +2,10 @@
 
   <!-- Run button -->
   <button
-    (click)="store.runAlgorithm()"
-    [disabled]="store.isLoading()"
+    (click)="store.compareMode() ? store.runBothAlgorithms() : store.runAlgorithm()"
+    [disabled]="store.isLoading() || store.compareIsLoading()"
     class="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-sm font-medium flex items-center gap-1.5">
-    ▶ 运行
+    ▶ 运行{{ store.compareMode() ? '对比' : '' }}
   </button>
 
   <div class="w-px h-5 bg-slate-700 mx-1"></div>

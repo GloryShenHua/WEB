@@ -13,6 +13,7 @@ public class SearchStep {
     private String description;
     private int codeLine;
     private int comparisons;
+    private String phase;
 
     public static Builder builder() { return new Builder(); }
 
@@ -28,6 +29,7 @@ public class SearchStep {
         public Builder description(String v) { s.description = v; return this; }
         public Builder codeLine(int v) { s.codeLine = v; return this; }
         public Builder comparisons(int v) { s.comparisons = v; return this; }
+        public Builder phase(String v) { s.phase = v; return this; }
         public SearchStep build() { return s; }
     }
 
@@ -41,5 +43,6 @@ public class SearchStep {
     public String getDescription() { return description; }
     public int getCodeLine() { return codeLine; }
     public int getComparisons() { return comparisons; }
+    public String getPhase() { return phase; }
 }
 
