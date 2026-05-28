@@ -11,6 +11,7 @@ import { GraphVisualizerComponent } from './visualizers/graph/graph-visualizer.c
 import { SearchVisualizerComponent } from './visualizers/search/search-visualizer.component';
 import { DpVisualizerComponent } from './visualizers/dp/dp-visualizer.component';
 import { NQueensVisualizerComponent } from './visualizers/n-queens/n-queens-visualizer.component';
+import { DivideConquerVisualizerComponent } from './visualizers/divide-conquer/divide-conquer-visualizer.component';
 import { HistoryPanelComponent } from './components/history-panel/history-panel.component';
 
 @Component({
@@ -28,6 +29,7 @@ import { HistoryPanelComponent } from './components/history-panel/history-panel.
     SearchVisualizerComponent,
     DpVisualizerComponent,
     NQueensVisualizerComponent,
+    DivideConquerVisualizerComponent,
     HistoryPanelComponent,
   ],
   templateUrl: './app.component.html',

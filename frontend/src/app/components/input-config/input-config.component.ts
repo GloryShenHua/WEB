@@ -34,6 +34,10 @@ export class InputConfigComponent implements OnInit {
   // ---- N-Queens ----
   queensN = 6;
 
+  // ---- Divide & Conquer ----
+  divideX = '12345678';
+  divideY = '87654321';
+
   constructor(public store: AlgorithmStore) {}
 
   ngOnInit(): void {
@@ -42,6 +46,8 @@ export class InputConfigComponent implements OnInit {
     this.searchTargetInput = this.store.searchTarget();
     this.capacity = this.store.knapsackCap();
     this.queensN = this.store.queensN();
+    this.divideX = this.store.divideX();
+    this.divideY = this.store.divideY();
     this.graphStartInput = this.store.graphStart();
     this.graphEndInput = this.store.graphEnd();
 
@@ -200,6 +206,32 @@ export class InputConfigComponent implements OnInit {
   // ---- N-Queens ----
   applyQueens(): void {
     this.store.setQueensN(this.queensN);
+  }
+
+  // ---- Divide & Conquer ----
+  applyDivideConquer(): void {
+    const x = this.divideX.replace(/\D/g, '');
+    const y = this.divideY.replace(/\D/g, '');
+    if (x.length > 0 && y.length > 0) {
+      this.divideX = x;
+      this.divideY = y;
+      this.store.setDivideNumbers(x, y);
+    }
+  }
+
+  randomDivideConquer(): void {
+    const makeNumber = () => {
+      const len = 6 + Math.floor(Math.random() * 5);
+      let value = String(Math.floor(Math.random() * 9) + 1);
+      for (let i = 1; i < len; i++) {
+        value += String(Math.floor(Math.random() * 10));
+      }
+      return value;
+    };
+
+    this.divideX = makeNumber();
+    this.divideY = makeNumber();
+    this.store.setDivideNumbers(this.divideX, this.divideY);
   }
 
   get category() { return this.store.category(); }

@@ -1,7 +1,7 @@
 import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
-import { SortStep, SearchStep, GraphStep, DPStep, NQueensStep } from '../../models/algorithm.models';
+import { SortStep, SearchStep, GraphStep, DPStep, NQueensStep, DivideConquerStep } from '../../models/algorithm.models';
 
 interface MetricItem {
   label: string;
@@ -37,6 +37,7 @@ const ALGO_INFO: Record<string, AlgoInfo> = {
   'astar':          { name: 'A* 启发搜索',   time: 'O(E log V)', worstTime: 'O(b^d)',     space: 'O(b^d)',   timeClass: 'good' },
   'knapsack':       { name: '0/1 背包',      time: 'O(nW)',      worstTime: 'O(nW)',      space: 'O(nW)',    timeClass: 'fair' },
   'n-queens':       { name: 'N 皇后',        time: 'O(n!)',      worstTime: 'O(n!)',      space: 'O(n)',     timeClass: 'poor' },
+  'karatsuba':      { name: 'Karatsuba 大整数乘法', time: 'O(n^log₂3)', worstTime: 'O(n^1.585)', space: 'O(log n)', timeClass: 'good' },
 };
 
 @Component({
@@ -112,6 +113,20 @@ export class ComplexityPanelComponent {
           { label: '解的数量',  value: s.solutionsFound, max: null, color: 'green' },
         ],
         extra: `N = ${n}`,
+      };
+    }
+    if (cat === 'divide-conquer') {
+      const s = step as DivideConquerStep;
+      const n = Math.max(this.store.divideX().length, this.store.divideY().length);
+      const maxDepth = Math.ceil(Math.log2(Math.max(n, 1)));
+
+      return {
+        items: [
+          { label: '基础乘法', value: s.multiplications, max: null, color: 'yellow' },
+          { label: '加减/组合', value: s.additions, max: null, color: 'blue' },
+          { label: '递归深度', value: s.depth, max: Math.max(maxDepth, 1), color: 'green' },
+        ],
+        extra: `n = ${n}，递推 T(n)=3T(n/2)+O(n)`,
       };
     }
     return null;

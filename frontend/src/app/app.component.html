@@ -70,13 +70,28 @@
         </div>
 
         <!-- Visualizers -->
+          <!-- 这里我进行了修改，添加了滚动条 -->
+          <!--
         <ng-container *ngIf="!store.isLoading() && store.steps().length > 0">
+        <ng-container *ngIf="!store.isLoading()"></ng-container>
           <app-sorting-visualizer   *ngIf="store.category() === 'sorting'" />
           <app-graph-visualizer     *ngIf="store.category() === 'graph'" />
           <app-search-visualizer    *ngIf="store.category() === 'search'" />
           <app-dp-visualizer        *ngIf="store.category() === 'dp'" />
           <app-n-queens-visualizer  *ngIf="store.category() === 'backtracking'" />
+          <app-divide-conquer-visualizer *ngIf="store.category() === 'divide-conquer'" />
         </ng-container>
+        -->
+          <div
+                  *ngIf="!store.isLoading() && store.steps().length > 0"
+                  class="flex-1 min-h-0 overflow-hidden">
+              <app-sorting-visualizer   *ngIf="store.category() === 'sorting'" />
+              <app-graph-visualizer     *ngIf="store.category() === 'graph'" />
+              <app-search-visualizer    *ngIf="store.category() === 'search'" />
+              <app-dp-visualizer        *ngIf="store.category() === 'dp'" />
+              <app-n-queens-visualizer  *ngIf="store.category() === 'backtracking'" />
+              <app-divide-conquer-visualizer *ngIf="store.category() === 'divide-conquer'" />
+          </div>
 
       </ng-container>
     </main>

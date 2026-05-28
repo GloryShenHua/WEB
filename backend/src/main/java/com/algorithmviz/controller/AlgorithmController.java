@@ -23,17 +23,20 @@ public class AlgorithmController {
     private final GraphService graphService;
     private final DPService dpService;
     private final BacktrackingService backtrackingService;
+    private final DivideConquerService divideConquerService;
     private final RunHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
 
     public AlgorithmController(SortingService sortingService, SearchService searchService,
             GraphService graphService, DPService dpService, BacktrackingService backtrackingService,
+            DivideConquerService divideConquerService,
             RunHistoryRepository historyRepository, ObjectMapper objectMapper) {
         this.sortingService = sortingService;
         this.searchService = searchService;
         this.graphService = graphService;
         this.dpService = dpService;
         this.backtrackingService = backtrackingService;
+        this.divideConquerService = divideConquerService;
         this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
     }
@@ -107,6 +110,20 @@ public class AlgorithmController {
                 steps.size(), 0, last.getBacktracks(), elapsed);
 
         return ok(steps, steps.size(), 0, last.getBacktracks(), elapsed);
+    }
+
+    // ==================== DIVIDE & CONQUER ====================
+    @PostMapping("/divide-conquer")
+    public ResponseEntity<Map<String, Object>> divideConquer(@Valid @RequestBody DivideConquerRequest req) throws Exception {
+        long start = System.currentTimeMillis();
+        List<DivideConquerStep> steps = divideConquerService.generateSteps(req.getAlgorithm(), req.getX(), req.getY());
+        long elapsed = System.currentTimeMillis() - start;
+
+        DivideConquerStep last = steps.get(steps.size() - 1);
+        saveHistory("divide-conquer", req.getAlgorithm(), objectMapper.writeValueAsString(req),
+                steps.size(), last.getMultiplications(), last.getAdditions(), elapsed);
+
+        return ok(steps, steps.size(), last.getMultiplications(), last.getAdditions(), elapsed);
     }
 
     // ==================== HISTORY ====================

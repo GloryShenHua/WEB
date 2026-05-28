@@ -56,6 +56,8 @@ export class AlgorithmStore {
   knapsackItems = signal<KnapsackItem[]>(DEFAULT_KNAPSACK);
   knapsackCap   = signal(8);
   queensN       = signal(6);
+  divideX       = signal('12345678');
+  divideY       = signal('87654321');
 
   // ---- Computed ----
   currentStepData = computed(() => this.steps()[this.currentStep()] ?? null);
@@ -77,6 +79,7 @@ export class AlgorithmStore {
       'prim': 'graph', 'kruskal': 'graph', 'astar': 'graph',
       'knapsack': 'dp',
       'n-queens': 'backtracking',
+      'karatsuba': 'divide-conquer',
     };
     this.category.set(catMap[id] ?? 'sorting');
     this.steps.set([]);
@@ -120,6 +123,10 @@ export class AlgorithmStore {
       });
     } else if (cat === 'backtracking') {
       this.svc.runBacktracking(algo, this.queensN()).subscribe({
+        next: r => handleResponse(r.steps), error: handleError,
+      });
+    } else if (cat === 'divide-conquer') {
+      this.svc.runDivideConquer(algo, this.divideX(), this.divideY()).subscribe({
         next: r => handleResponse(r.steps), error: handleError,
       });
     }
@@ -174,6 +181,10 @@ export class AlgorithmStore {
     this.knapsackItems.set(items); this.knapsackCap.set(cap);
   }
   setQueensN(n: number): void { this.queensN.set(n); }
+  setDivideNumbers(x: string, y: string): void {
+    this.divideX.set(x);
+    this.divideY.set(y);
+  }
   setActivePanel(p: 'visualizer' | 'history'): void { this.activePanel.set(p); }
 
   reset(): void {
