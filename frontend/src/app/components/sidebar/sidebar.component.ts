@@ -64,6 +64,13 @@ export class SidebarComponent {
         { id: 'karatsuba', label: '大整数乘法 Karatsuba', complexity: 'O(n^1.585)' },
       ],
     },
+    {
+      category: 'VR/3D',
+      icon: '🕶',
+      items: [
+        { id: 'data-structure-3d', label: '3D 数据结构学习', complexity: '' },
+      ],
+    }
   ];
 
   constructor(public store: AlgorithmStore) {}

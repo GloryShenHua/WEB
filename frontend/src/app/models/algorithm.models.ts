@@ -1,5 +1,5 @@
 // ===================== COMMON =====================
-export type AlgorithmCategory = 'sorting' | 'graph' | 'search' | 'dp' | 'backtracking' | 'divide-conquer';
+export type AlgorithmCategory = 'sorting' | 'graph' | 'search' | 'dp' | 'backtracking' | 'divide-conquer'|'vr-3d';
 
 export type AlgorithmId =
   | 'quick-sort' | 'merge-sort' | 'bubble-sort' | 'heap-sort' | 'insertion-sort'
@@ -7,7 +7,8 @@ export type AlgorithmId =
   | 'dijkstra' | 'bfs' | 'dfs' | 'prim' | 'kruskal' | 'astar'
   | 'knapsack'
   | 'n-queens'
-  | 'karatsuba';
+  | 'karatsuba'
+  | 'data-structure-3d';
 
 export interface Metrics {
   comparisons: number;

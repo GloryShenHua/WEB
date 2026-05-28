@@ -80,6 +80,7 @@ export class AlgorithmStore {
       'knapsack': 'dp',
       'n-queens': 'backtracking',
       'karatsuba': 'divide-conquer',
+      'data-structure-3d': 'vr-3d',
     };
     this.category.set(catMap[id] ?? 'sorting');
     this.steps.set([]);
@@ -104,6 +105,13 @@ export class AlgorithmStore {
       this.isLoading.set(false);
       console.error(err);
     };
+
+    if (cat === 'vr-3d') {
+      this.steps.set([{ type: 'vr-3d' } as any]);
+      this.currentStep.set(0);
+      this.isLoading.set(false);
+      return;
+    }
 
     if (cat === 'sorting') {
       this.svc.runSort(algo, this.sortArray()).subscribe({
