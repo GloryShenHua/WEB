@@ -4,6 +4,7 @@ import {
   AppState, AlgorithmCategory, AlgorithmId, AnyStep,
   GraphData, KnapsackItem
 } from '../models/algorithm.models';
+import {CustomStructureData, StructureType} from "../visualizers/vr-3d/renderers/structure-renderer.types";
 
 const DEFAULT_GRAPH: GraphData = {
   directed: false,
@@ -58,6 +59,8 @@ export class AlgorithmStore {
   queensN       = signal(6);
   divideX       = signal('12345678');
   divideY       = signal('87654321');
+  vr3dStructure = signal<StructureType>('array');
+  vr3dData      = signal<CustomStructureData>({ values: ['10', '20', '30', '40', '50'] });
 
   // ---- Computed ----
   currentStepData = computed(() => this.steps()[this.currentStep()] ?? null);
@@ -192,6 +195,55 @@ export class AlgorithmStore {
   setDivideNumbers(x: string, y: string): void {
     this.divideX.set(x);
     this.divideY.set(y);
+  }
+  setVr3dStructure(type: StructureType): void {
+    this.vr3dStructure.set(type);
+    this.vr3dData.set({ values: this.defaultVr3dValues(type) });
+  }
+  setVr3dData(values: string[]): void {
+    this.vr3dData.set({ values });
+  }
+  randomVr3dData(): void {
+    const type = this.vr3dStructure();
+
+    if (type === 'linked-list') {
+      const pool = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+      const n = 3 + Math.floor(Math.random() * 4);
+      this.vr3dData.set({ values: pool.slice(0, n) });
+      return;
+    }
+
+    if (type === 'binary-tree') {
+      const values = Array.from({ length: 7 }, () => String(Math.floor(Math.random() * 90) + 10));
+      this.vr3dData.set({ values });
+      return;
+    }
+
+    if (type === 'b-plus-tree') {
+      const n = 8 + Math.floor(Math.random() * 5);
+      const values = Array.from({ length: n }, (_, i) => String((i + 1) * 10));
+      this.vr3dData.set({ values });
+      return;
+    }
+
+    const n = 4 + Math.floor(Math.random() * 5);
+    const values = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
+    this.vr3dData.set({ values });
+  }
+
+  private defaultVr3dValues(type: StructureType): string[] {
+    switch (type) {
+      case 'array':
+      case 'stack':
+      case 'queue':
+        return ['10', '20', '30', '40', '50'];
+      case 'linked-list':
+        return ['A', 'B', 'C', 'D'];
+      case 'binary-tree':
+        return ['8', '4', '12', '2', '6', '10', '14'];
+      case 'b-plus-tree':
+        return ['10', '20', '30', '40', '50', '60', '70', '80'];
+    }
   }
   setActivePanel(p: 'visualizer' | 'history'): void { this.activePanel.set(p); }
 

@@ -4,17 +4,21 @@ import { ThreeObjectFactory } from './three-object-factory';
 
 export class LinkedListRenderer {
     static render(ctx: StructureRendererContext): void {
-        const values = [10, 20, 30, 40];
+        const values = ctx.data.values.length > 0 ? ctx.data.values : ['10', '20', '30', '40'];
+        const center = (values.length - 1) / 2;
 
         values.forEach((value, i) => {
+            const x = (i - center) * 3;
+
             const node = ThreeObjectFactory.createSphere(String(value), 0x38bdf8);
-            node.position.set((i - 1.5) * 3, 1.5, 0);
+            node.position.set(x, 1.5, 0);
             ctx.addObject(node);
 
             if (i < values.length - 1) {
+                const nextX = (i + 1 - center) * 3;
                 const arrow = ThreeObjectFactory.createArrow(
-                    new THREE.Vector3((i - 1.5) * 3 + 0.8, 1.5, 0),
-                    new THREE.Vector3((i - 0.5) * 3 - 0.8, 1.5, 0),
+                    new THREE.Vector3(x + 0.8, 1.5, 0),
+                    new THREE.Vector3(nextX - 0.8, 1.5, 0),
                     0xfacc15
                 );
                 ctx.addObject(arrow);

@@ -4,7 +4,8 @@ import {
     ViewChild,
     AfterViewInit,
     OnDestroy,
-    signal
+    computed,
+    effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
@@ -17,6 +18,7 @@ import { QueueRenderer } from './renderers/queue.renderer';
 import { LinkedListRenderer } from './renderers/linked-list.renderer';
 import { BinaryTreeRenderer } from './renderers/binary-tree.renderer';
 import { BPlusTreeRenderer } from './renderers/b-plus-tree.renderer';
+import { AlgorithmStore } from '../../store/algorithm.store';
 
 @Component({
     selector: 'app-vr-3d-visualizer',
@@ -28,7 +30,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     @ViewChild('canvasContainer', { static: true })
     canvasContainer!: ElementRef<HTMLDivElement>;
 
-    selected = signal<StructureType>('array');
+    selected = computed(() => this.store.vr3dStructure());
 
     private scene!: THREE.Scene;
     private camera!: THREE.PerspectiveCamera;
@@ -36,6 +38,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     private controls!: OrbitControls;
     private animationId: number | null = null;
     private objects: THREE.Object3D[] = [];
+    private threeReady = false;
 
     structureTypes = [
         { id: 'array' as const, label: '数组' },
@@ -46,12 +49,24 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         { id: 'b-plus-tree' as const, label: 'B+ 树' },
     ];
 
+    constructor(public store: AlgorithmStore) {
+        effect(() => {
+            this.store.vr3dStructure();
+            this.store.vr3dData();
+
+            if (this.threeReady) {
+                this.renderStructure();
+            }
+        });
+    }
+
     get currentInfo() {
         return STRUCTURE_INFO[this.selected()];
     }
 
     ngAfterViewInit(): void {
         this.initThree();
+        this.threeReady = true;
         this.renderStructure();
         this.animate();
         window.addEventListener('resize', this.handleResize);
@@ -73,8 +88,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     }
 
     selectStructure(type: StructureType): void {
-        this.selected.set(type);
-        this.renderStructure();
+        this.store.setVr3dStructure(type);
     }
 
     private initThree(): void {
@@ -98,10 +112,6 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.resetCameraView();
-        /*
-        * this.controls.target.set(0, 0, 0);
-        *this.controls.update();
-        * */
 
         const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambient);
@@ -109,9 +119,6 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         const directional = new THREE.DirectionalLight(0xffffff, 1);
         directional.position.set(8, 10, 8);
         this.scene.add(directional);
-
-        //const grid = new THREE.GridHelper(24, 24, 0x334155, 0x1e293b);
-        //this.scene.add(grid);
     }
 
     private renderStructure(): void {
@@ -119,6 +126,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
 
         const ctx = {
             addObject: (obj: THREE.Object3D) => this.addObject(obj),
+            data: this.store.vr3dData(),
         };
 
         switch (this.selected()) {

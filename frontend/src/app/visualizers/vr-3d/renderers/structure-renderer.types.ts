@@ -16,6 +16,11 @@ export interface StructureInfo {
   useCases: string[];
 }
 
+export interface CustomStructureData {
+  values: string[];
+}
+
 export interface StructureRendererContext {
   addObject: (obj: THREE.Object3D) => void;
+  data: CustomStructureData;
 }

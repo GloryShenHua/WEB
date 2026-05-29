@@ -1,4 +1,5 @@
 import { StructureInfo, StructureType } from '../renderers/structure-renderer.types';
+// 这里存放数据结构相关知识数据
 
 export const STRUCTURE_INFO: Record<StructureType, StructureInfo> = {
   array: {
@@ -56,7 +57,7 @@ export const STRUCTURE_INFO: Record<StructureType, StructureInfo> = {
       { name: '插入', complexity: 'O(log n) / O(n)', description: '按规则插入到子树中。' },
       { name: '遍历', complexity: 'O(n)', description: '前序、中序、后序或层序访问所有节点。' },
     ],
-    useCases: ['表达式树', '搜索树', '堆', '语法分析'],
+    useCases: ['搜索树', '最大/最小堆', '语法分析'],
   },
   'b-plus-tree': {
     title: 'B+ 树 B+ Tree',

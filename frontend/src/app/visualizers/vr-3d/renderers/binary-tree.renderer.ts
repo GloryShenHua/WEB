@@ -4,19 +4,25 @@ import { ThreeObjectFactory } from './three-object-factory';
 
 export class BinaryTreeRenderer {
     static render(ctx: StructureRendererContext): void {
-        const nodes = [
-            { v: '8', x: 0, y: 5, z: 0 },
-            { v: '4', x: -4, y: 3, z: 0 },
-            { v: '12', x: 4, y: 3, z: 0 },
-            { v: '2', x: -6, y: 1, z: 0 },
-            { v: '6', x: -2, y: 1, z: 0 },
-            { v: '10', x: 2, y: 1, z: 0 },
-            { v: '14', x: 6, y: 1, z: 0 },
-        ];
+        const values = ctx.data.values.length > 0
+            ? ctx.data.values
+            : ['8', '4', '12', '2', '6', '10', '14'];
 
-        const edges = [
-            [0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6],
-        ];
+        const nodes = values.map((value, index) => {
+            const level = Math.floor(Math.log2(index + 1));
+            const firstIndexOfLevel = Math.pow(2, level) - 1;
+            const indexInLevel = index - firstIndexOfLevel;
+            const nodesInLevel = Math.pow(2, level);
+            const gap = 8 / Math.max(nodesInLevel, 1);
+
+            return {
+                v: value,
+                x: (indexInLevel - (nodesInLevel - 1) / 2) * gap,
+                y: 5 - level * 2,
+                z: 0,
+                index,
+            };
+        });
 
         nodes.forEach(node => {
             const sphere = ThreeObjectFactory.createSphere(node.v, 0xa855f7);
@@ -24,13 +30,21 @@ export class BinaryTreeRenderer {
             ctx.addObject(sphere);
         });
 
-        edges.forEach(([from, to]) => {
-            const a = nodes[from];
-            const b = nodes[to];
+        nodes.forEach(node => {
+            if (node.index === 0) {
+                return;
+            }
+
+            const parentIndex = Math.floor((node.index - 1) / 2);
+            const parent = nodes[parentIndex];
+
+            if (!parent) {
+                return;
+            }
 
             const line = ThreeObjectFactory.createLine(
-                new THREE.Vector3(a.x, a.y, a.z),
-                new THREE.Vector3(b.x, b.y, b.z),
+                new THREE.Vector3(parent.x, parent.y, parent.z),
+                new THREE.Vector3(node.x, node.y, node.z),
                 0x94a3b8
             );
 
