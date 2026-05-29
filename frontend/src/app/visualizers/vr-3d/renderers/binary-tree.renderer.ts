@@ -8,26 +8,29 @@ export class BinaryTreeRenderer {
             ? ctx.data.values
             : ['8', '4', '12', '2', '6', '10', '14'];
 
-        const nodes = values.map((value, index) => {
+        const maxVisibleNodes = values.slice(0, 63);
+        const maxLevel = Math.floor(Math.log2(maxVisibleNodes.length));
+        const baseWidth = Math.max(12, Math.pow(2, Math.min(maxLevel, 5)) * 1.4);
+        const levelGap = 1.75;
+
+        const nodes = maxVisibleNodes.map((value, index) => {
             const level = Math.floor(Math.log2(index + 1));
             const firstIndexOfLevel = Math.pow(2, level) - 1;
             const indexInLevel = index - firstIndexOfLevel;
             const nodesInLevel = Math.pow(2, level);
-            const gap = 8 / Math.max(nodesInLevel, 1);
+
+            const xGap = baseWidth / nodesInLevel;
+            const x = (indexInLevel - (nodesInLevel - 1) / 2) * xGap;
+            const y = 5 - level * levelGap;
+            const z = -level * 0.25;
 
             return {
                 v: value,
-                x: (indexInLevel - (nodesInLevel - 1) / 2) * gap,
-                y: 5 - level * 2,
-                z: 0,
+                x,
+                y,
+                z,
                 index,
             };
-        });
-
-        nodes.forEach(node => {
-            const sphere = ThreeObjectFactory.createSphere(node.v, 0xa855f7);
-            sphere.position.set(node.x, node.y, node.z);
-            ctx.addObject(sphere);
         });
 
         nodes.forEach(node => {
@@ -49,6 +52,12 @@ export class BinaryTreeRenderer {
             );
 
             ctx.addObject(line);
+        });
+
+        nodes.forEach(node => {
+            const sphere = ThreeObjectFactory.createSphere(node.v, 0xa855f7);
+            sphere.position.set(node.x, node.y, node.z);
+            ctx.addObject(sphere);
         });
     }
 }

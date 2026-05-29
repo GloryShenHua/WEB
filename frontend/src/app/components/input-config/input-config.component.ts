@@ -259,7 +259,7 @@ export class InputConfigComponent implements OnInit {
       .split(/[,\s]+/)
       .map(v => v.trim())
       .filter(Boolean)
-      .slice(0, 15);
+      .slice(0, 63);
 
     if (values.length > 0) {
       this.store.setVr3dData(values);
@@ -283,7 +283,7 @@ export class InputConfigComponent implements OnInit {
       case 'linked-list':
         return '链表：按 next 指针顺序输入，如 A, B, C, D';
       case 'binary-tree':
-        return '二叉树：按层序输入，如 8, 4, 12, 2, 6, 10, 14';
+        return '二叉树：按层序输入，如 8, 4, 12, 2, 6, 10, 14，最多 63 个节点';
       case 'b-plus-tree':
         return 'B+ 树：输入关键字，系统每 3 个关键字生成一个叶子节点';
     }

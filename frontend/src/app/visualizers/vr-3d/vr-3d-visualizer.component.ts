@@ -154,8 +154,17 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     }
 
     private resetCameraView(): void {
-        this.camera.position.set(0, 4.5, 14);
-        this.controls.target.set(0, 2.4, 0);
+        if (this.selected() === 'b-plus-tree') {
+            this.camera.position.set(0, 5.5, 24);
+            this.controls.target.set(0, 1.2, 0);
+        } else if (this.selected() === 'binary-tree') {
+            this.camera.position.set(0, 5.5, 20);
+            this.controls.target.set(0, 1.4, 0);
+        } else {
+            this.camera.position.set(0, 4.5, 14);
+            this.controls.target.set(0, 2.4, 0);
+        }
+
         this.controls.update();
     }
 

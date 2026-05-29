@@ -214,14 +214,16 @@ export class AlgorithmStore {
     }
 
     if (type === 'binary-tree') {
-      const values = Array.from({ length: 7 }, () => String(Math.floor(Math.random() * 90) + 10));
+      const sizes = [7, 15, 31];
+      const n = sizes[Math.floor(Math.random() * sizes.length)];
+      const values = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
       this.vr3dData.set({ values });
       return;
     }
 
     if (type === 'b-plus-tree') {
-      const n = 8 + Math.floor(Math.random() * 5);
-      const values = Array.from({ length: n }, (_, i) => String((i + 1) * 10));
+      const n = 18 + Math.floor(Math.random() * 25);
+      const values = Array.from({ length: n }, (_, i) => String((i + 1) * 5));
       this.vr3dData.set({ values });
       return;
     }
