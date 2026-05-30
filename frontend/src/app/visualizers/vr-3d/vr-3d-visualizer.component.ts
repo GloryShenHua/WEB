@@ -194,6 +194,12 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
             } else if (material) {
                 material.dispose();
             }
+
+            if (child instanceof THREE.Sprite) {
+                const material = child.material as THREE.SpriteMaterial;
+                if (material.map) material.map.dispose();
+                material.dispose();
+            }
         });
     }
 

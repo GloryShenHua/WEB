@@ -49,6 +49,7 @@ export class ThreeObjectFactory {
         return group;
     }
 
+    // 创建文本子画面
     static createTextSprite(text: string): THREE.Sprite {
         const canvas = document.createElement('canvas');
         canvas.width = 300;
@@ -83,6 +84,7 @@ export class ThreeObjectFactory {
         return new THREE.Line(geometry, material);
     }
 
+    // 创建指向性箭头
     static createArrow(start: THREE.Vector3, end: THREE.Vector3, color: number): THREE.ArrowHelper {
         const direction = new THREE.Vector3().subVectors(end, start).normalize();
         const length = start.distanceTo(end);

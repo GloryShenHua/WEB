@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {CommonModule} from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { AlgorithmStore } from './store/algorithm.store';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -19,23 +19,23 @@ import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/a
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    CommonModule,
-    //RouterOutlet,
-    SidebarComponent,
-    ControlPanelComponent,
-    InputConfigComponent,
-    ComplexityPanelComponent,
-    SortingVisualizerComponent,
-    GraphVisualizerComponent,
-    SearchVisualizerComponent,
-    DpVisualizerComponent,
-    NQueensVisualizerComponent,
-    DivideConquerVisualizerComponent,
-    HistoryPanelComponent,
-    Vr3dVisualizerComponent,
-    AiComplexityDialogComponent,
-  ],
+    imports: [
+        CommonModule,
+        //RouterOutlet,
+        SidebarComponent,
+        ControlPanelComponent,
+        InputConfigComponent,
+        ComplexityPanelComponent,
+        SortingVisualizerComponent,
+        GraphVisualizerComponent,
+        SearchVisualizerComponent,
+        DpVisualizerComponent,
+        NQueensVisualizerComponent,
+        DivideConquerVisualizerComponent,
+        HistoryPanelComponent,
+        Vr3dVisualizerComponent,
+        AiComplexityDialogComponent,
+    ],
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit {
