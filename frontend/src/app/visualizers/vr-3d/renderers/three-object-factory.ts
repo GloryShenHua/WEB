@@ -51,7 +51,7 @@ export class ThreeObjectFactory {
 
     static createTextSprite(text: string): THREE.Sprite {
         const canvas = document.createElement('canvas');
-        canvas.width = 256;
+        canvas.width = 300;
         canvas.height = 128;
 
         const ctx = canvas.getContext('2d')!;

@@ -189,6 +189,24 @@ export interface RunHistory {
   executionTimeMs: number;
   createdAt: string;
 }
+// ===================== ALGORITHM COMPLEXITY Analysis=====================
+export interface AlgorithmComplexityRequest {
+  code: string;
+  language: string;
+  caseType: string;
+}
+
+export interface AlgorithmComplexityAnalysis {
+  timeComplexityWorst: string;
+  timeComplexityAverage: string;
+  timeComplexityBest: string;
+  spaceComplexity: string;
+  reasoningSteps: string[];
+  assumptions: string[];
+  optimizationSuggestions: string[];
+  confidence: number;
+  rawText?: string;
+}
 
 // ===================== APP STATE =====================
 export interface AppState {

@@ -1,7 +1,12 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AlgorithmStore } from '../../store/algorithm.store';
-import { SortStep, SearchStep, GraphStep, DPStep, NQueensStep, DivideConquerStep } from '../../models/algorithm.models';
+import { AlgorithmService } from '../../services/algorithm.service';
+import {
+  SortStep, SearchStep, GraphStep, DPStep, NQueensStep, DivideConquerStep,
+  AlgorithmComplexityAnalysis
+} from '../../models/algorithm.models';
 
 interface MetricItem {
   label: string;
@@ -43,11 +48,35 @@ const ALGO_INFO: Record<string, AlgoInfo> = {
 @Component({
   selector: 'app-complexity-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './complexity-panel.component.html',
 })
 export class ComplexityPanelComponent {
-  constructor(public store: AlgorithmStore) {}
+  showAlgorithmDialog = false;
+  algorithmCode = '';
+  algorithmLanguage = 'pseudocode';
+  algorithmCaseType = 'worst';
+  algorithmLoading = false;
+  algorithmError: string | null = null;
+  algorithmResult: AlgorithmComplexityAnalysis | null = null;
+
+  constructor(
+    public store: AlgorithmStore,
+    private algorithmService: AlgorithmService
+  ) {
+    effect(() => {
+      if (this.store.aiDialogOpen() && !this.algorithmCode) {
+        this.algorithmCode =
+            '//验证两个大整数相等\n' +
+          '输入：整数x1,x2,k;\n' +
+          '重复以下步骤k次;\n' +
+          '选择随机素数p∈[1,M];\n' +
+          'if x1 != x2 mod p then\n' +
+          '   返回 false;\n' +
+          '返回 true ';
+      }
+    });
+  }
 
   algoInfo = computed<AlgoInfo | null>(() => ALGO_INFO[this.store.selectedAlgo()] ?? null);
 
@@ -168,5 +197,41 @@ export class ComplexityPanelComponent {
       blue:   'text-blue-400',
       green:  'text-green-400',
     } as Record<string, string>)[color] ?? 'text-slate-400';
+  }
+
+  closeAlgorithmDialog(): void {
+    if (this.algorithmLoading) {
+      return;
+    }
+
+    this.store.closeAiComplexityDialog();
+  }
+
+  analyzeAlgorithmComplexity(): void {
+    const code = this.algorithmCode.trim();
+
+    if (!code) {
+      this.algorithmError = '请输入伪代码或简单脚本';
+      return;
+    }
+
+    this.algorithmLoading = true;
+    this.algorithmError = null;
+    this.algorithmResult = null;
+
+    this.algorithmService.analyzeAlgorithmComplexity({
+      code,
+      language: this.algorithmLanguage,
+      caseType: this.algorithmCaseType,
+    }).subscribe({
+      next: result => {
+        this.algorithmResult = result;
+        this.algorithmLoading = false;
+      },
+      error: err => {
+        this.algorithmError = err?.error?.message || 'AI 复杂度分析失败，请稍后重试';
+        this.algorithmLoading = false;
+      },
+    });
   }
 }

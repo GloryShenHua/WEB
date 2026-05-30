@@ -24,12 +24,14 @@ public class AlgorithmController {
     private final DPService dpService;
     private final BacktrackingService backtrackingService;
     private final DivideConquerService divideConquerService;
+    private final AlgorithmComplexityService algorithmComplexityService;
     private final RunHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
 
     public AlgorithmController(SortingService sortingService, SearchService searchService,
             GraphService graphService, DPService dpService, BacktrackingService backtrackingService,
             DivideConquerService divideConquerService,
+            AlgorithmComplexityService algorithmComplexityService,
             RunHistoryRepository historyRepository, ObjectMapper objectMapper) {
         this.sortingService = sortingService;
         this.searchService = searchService;
@@ -37,6 +39,7 @@ public class AlgorithmController {
         this.dpService = dpService;
         this.backtrackingService = backtrackingService;
         this.divideConquerService = divideConquerService;
+        this.algorithmComplexityService = algorithmComplexityService;
         this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
     }
@@ -124,6 +127,13 @@ public class AlgorithmController {
                 steps.size(), last.getMultiplications(), last.getAdditions(), elapsed);
 
         return ok(steps, steps.size(), last.getMultiplications(), last.getAdditions(), elapsed);
+    }
+
+    // ==================== AI CUSTOM COMPLEXITY ====================
+    @PostMapping("/algorithm-complexity")
+    public ResponseEntity<AlgorithmComplexityAnalysis> analyzeAlgorithmComplexity(
+            @Valid @RequestBody AlgorithmComplexityRequest req) {
+        return ResponseEntity.ok(algorithmComplexityService.analyze(req));
     }
 
     // ==================== HISTORY ====================

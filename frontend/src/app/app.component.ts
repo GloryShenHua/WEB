@@ -38,8 +38,9 @@ import {Vr3dVisualizerComponent} from "./visualizers/vr-3d/vr-3d-visualizer.comp
 })
 export class AppComponent implements OnInit {
   tabs = [
-    { id: 'visualizer' as const, label: '可视化', icon: '⚡' },
-    { id: 'history'    as const, label: '历史记录', icon: '📋' },
+    { id: 'visualizer' as const, label: '可视化', icon: '⚡', type: 'panel' as const },
+    { id: 'history' as const, label: '历史记录', icon: '📋', type: 'panel' as const },
+    { id: 'ai-complexity' as const, label: 'AI复杂度分析', icon: '🤖', type: 'action' as const },
   ];
 
   constructor(public store: AlgorithmStore) {}

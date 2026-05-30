@@ -47,6 +47,7 @@ export class AlgorithmStore {
   isLoading     = signal(false);
   error         = signal<string | null>(null);
   activePanel   = signal<'visualizer' | 'history'>('visualizer');
+  aiDialogOpen  = signal(false);
 
   sortArray     = signal<number[]>([64, 34, 25, 12, 22, 11, 90]);
   searchArray   = signal<number[]>([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
@@ -248,6 +249,15 @@ export class AlgorithmStore {
     }
   }
   setActivePanel(p: 'visualizer' | 'history'): void { this.activePanel.set(p); }
+
+  openAiComplexityDialog(): void {
+    this.activePanel.set('visualizer');
+    this.aiDialogOpen.set(true);
+  }
+
+  closeAiComplexityDialog(): void {
+    this.aiDialogOpen.set(false);
+  }
 
   reset(): void {
     this.stopPlay();

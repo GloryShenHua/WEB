@@ -13,14 +13,16 @@
     <nav class="flex gap-1">
       <button
         *ngFor="let tab of tabs"
-        (click)="store.setActivePanel(tab.id)"
-        [class]="store.activePanel() === tab.id
-          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
+        (click)="tab.type === 'action' ? store.openAiComplexityDialog() : store.setActivePanel(tab.id)"
+        [class]="tab.type === 'panel' && store.activePanel() === tab.id
+        ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
+        : tab.type === 'action'
+          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-purple-600 text-white hover:bg-purple-500'
           : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800'">
-        {{ tab.icon }} {{ tab.label }}
-      </button>
-    </nav>
-  </header>
+      {{ tab.icon }} {{ tab.label }}
+    </button>
+  </nav>
+</header>
 
   <!-- Error Banner -->
   <div *ngIf="store.error()" class="bg-red-900/80 border-b border-red-700 px-5 py-2 text-sm text-red-200 flex items-center justify-between">
