@@ -5,7 +5,6 @@ import { AlgorithmStore } from '../../store/algorithm.store';
 import { AlgorithmService } from '../../services/algorithm.service';
 import {
   SortStep, SearchStep, GraphStep, DPStep, NQueensStep, DivideConquerStep,
-  AlgorithmComplexityAnalysis
 } from '../../models/algorithm.models';
 
 interface MetricItem {
@@ -52,30 +51,10 @@ const ALGO_INFO: Record<string, AlgoInfo> = {
   templateUrl: './complexity-panel.component.html',
 })
 export class ComplexityPanelComponent {
-  showAlgorithmDialog = false;
-  algorithmCode = '';
-  algorithmLanguage = 'pseudocode';
-  algorithmCaseType = 'worst';
-  algorithmLoading = false;
-  algorithmError: string | null = null;
-  algorithmResult: AlgorithmComplexityAnalysis | null = null;
-
   constructor(
-    public store: AlgorithmStore,
-    private algorithmService: AlgorithmService
+      public store: AlgorithmStore,
+      private algorithmService: AlgorithmService
   ) {
-    effect(() => {
-      if (this.store.aiDialogOpen() && !this.algorithmCode) {
-        this.algorithmCode =
-            '//验证两个大整数相等\n' +
-          '输入：整数x1,x2,k;\n' +
-          '重复以下步骤k次;\n' +
-          '选择随机素数p∈[1,M];\n' +
-          'if x1 != x2 mod p then\n' +
-          '   返回 false;\n' +
-          '返回 true ';
-      }
-    });
   }
 
   algoInfo = computed<AlgoInfo | null>(() => ALGO_INFO[this.store.selectedAlgo()] ?? null);
@@ -92,9 +71,9 @@ export class ComplexityPanelComponent {
       const maxCmp = n * (n - 1) / 2;
       return {
         items: [
-          { label: '比较次数', value: s.comparisons, max: maxCmp, color: 'yellow' },
-          { label: '交换次数', value: s.swaps,       max: maxCmp, color: 'red' },
-          { label: '访问次数', value: s.accesses,    max: maxCmp * 2, color: 'blue' },
+          {label: '比较次数', value: s.comparisons, max: maxCmp, color: 'yellow'},
+          {label: '交换次数', value: s.swaps, max: maxCmp, color: 'red'},
+          {label: '访问次数', value: s.accesses, max: maxCmp * 2, color: 'blue'},
         ],
         extra: `n = ${n}`,
       };
@@ -105,7 +84,7 @@ export class ComplexityPanelComponent {
       const maxCmp = Math.ceil(Math.log2(n)) + 1;
       return {
         items: [
-          { label: '比较次数', value: s.comparisons, max: maxCmp, color: 'yellow' },
+          {label: '比较次数', value: s.comparisons, max: maxCmp, color: 'yellow'},
         ],
         extra: `n = ${n}，最多 ⌈log₂n⌉ = ${maxCmp} 次`,
       };
@@ -116,8 +95,8 @@ export class ComplexityPanelComponent {
       const E = this.store.graphData().edges.length;
       return {
         items: [
-          { label: '已访问节点', value: s.visitedCount, max: V, color: 'green' },
-          { label: '比较次数',   value: s.comparisons,  max: V * V, color: 'yellow' },
+          {label: '已访问节点', value: s.visitedCount, max: V, color: 'green'},
+          {label: '比较次数', value: s.comparisons, max: V * V, color: 'yellow'},
         ],
         extra: `V = ${V}，E = ${E}`,
       };
@@ -128,7 +107,7 @@ export class ComplexityPanelComponent {
       const W = this.store.knapsackCap();
       return {
         items: [
-          { label: '子问题计算', value: s.comparisons, max: n * W, color: 'yellow' },
+          {label: '子问题计算', value: s.comparisons, max: n * W, color: 'yellow'},
         ],
         extra: `n = ${n}，W = ${W}，最多 n×W = ${n * W} 次`,
       };
@@ -138,8 +117,8 @@ export class ComplexityPanelComponent {
       const n = this.store.queensN();
       return {
         items: [
-          { label: '回溯次数',  value: s.backtracks,     max: null, color: 'red' },
-          { label: '解的数量',  value: s.solutionsFound, max: null, color: 'green' },
+          {label: '回溯次数', value: s.backtracks, max: null, color: 'red'},
+          {label: '解的数量', value: s.solutionsFound, max: null, color: 'green'},
         ],
         extra: `N = ${n}`,
       };
@@ -151,9 +130,9 @@ export class ComplexityPanelComponent {
 
       return {
         items: [
-          { label: '基础乘法', value: s.multiplications, max: null, color: 'yellow' },
-          { label: '加减/组合', value: s.additions, max: null, color: 'blue' },
-          { label: '递归深度', value: s.depth, max: Math.max(maxDepth, 1), color: 'green' },
+          {label: '基础乘法', value: s.multiplications, max: null, color: 'yellow'},
+          {label: '加减/组合', value: s.additions, max: null, color: 'blue'},
+          {label: '递归深度', value: s.depth, max: Math.max(maxDepth, 1), color: 'green'},
         ],
         extra: `n = ${n}，递推 T(n)=3T(n/2)+O(n)`,
       };
@@ -170,9 +149,9 @@ export class ComplexityPanelComponent {
   timeClass(cls: string): string {
     return ({
       excellent: 'text-green-400',
-      good:      'text-blue-400',
-      fair:      'text-yellow-400',
-      poor:      'text-red-400',
+      good: 'text-blue-400',
+      fair: 'text-yellow-400',
+      poor: 'text-red-400',
     } as Record<string, string>)[cls] ?? 'text-slate-400';
   }
 
@@ -184,54 +163,18 @@ export class ComplexityPanelComponent {
   metricColor(color: string): string {
     return ({
       yellow: 'bg-yellow-500',
-      red:    'bg-red-500',
-      blue:   'bg-blue-500',
-      green:  'bg-green-500',
+      red: 'bg-red-500',
+      blue: 'bg-blue-500',
+      green: 'bg-green-500',
     } as Record<string, string>)[color] ?? 'bg-slate-500';
   }
 
   metricTextColor(color: string): string {
     return ({
       yellow: 'text-yellow-400',
-      red:    'text-red-400',
-      blue:   'text-blue-400',
-      green:  'text-green-400',
+      red: 'text-red-400',
+      blue: 'text-blue-400',
+      green: 'text-green-400',
     } as Record<string, string>)[color] ?? 'text-slate-400';
-  }
-
-  closeAlgorithmDialog(): void {
-    if (this.algorithmLoading) {
-      return;
-    }
-
-    this.store.closeAiComplexityDialog();
-  }
-
-  analyzeAlgorithmComplexity(): void {
-    const code = this.algorithmCode.trim();
-
-    if (!code) {
-      this.algorithmError = '请输入伪代码或简单脚本';
-      return;
-    }
-
-    this.algorithmLoading = true;
-    this.algorithmError = null;
-    this.algorithmResult = null;
-
-    this.algorithmService.analyzeAlgorithmComplexity({
-      code,
-      language: this.algorithmLanguage,
-      caseType: this.algorithmCaseType,
-    }).subscribe({
-      next: result => {
-        this.algorithmResult = result;
-        this.algorithmLoading = false;
-      },
-      error: err => {
-        this.algorithmError = err?.error?.message || 'AI 复杂度分析失败，请稍后重试';
-        this.algorithmLoading = false;
-      },
-    });
   }
 }

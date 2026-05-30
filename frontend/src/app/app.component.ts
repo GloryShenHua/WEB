@@ -14,6 +14,7 @@ import { NQueensVisualizerComponent } from './visualizers/n-queens/n-queens-visu
 import { DivideConquerVisualizerComponent } from './visualizers/divide-conquer/divide-conquer-visualizer.component';
 import { HistoryPanelComponent } from './components/history-panel/history-panel.component';
 import {Vr3dVisualizerComponent} from "./visualizers/vr-3d/vr-3d-visualizer.component";
+import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/ai-complexity-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -33,14 +34,15 @@ import {Vr3dVisualizerComponent} from "./visualizers/vr-3d/vr-3d-visualizer.comp
     DivideConquerVisualizerComponent,
     HistoryPanelComponent,
     Vr3dVisualizerComponent,
+    AiComplexityDialogComponent,
   ],
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit {
   tabs = [
+    { id: 'ai-complexity' as const, label: 'AI复杂度分析', icon: '🤖', type: 'action' as const },
     { id: 'visualizer' as const, label: '可视化', icon: '⚡', type: 'panel' as const },
     { id: 'history' as const, label: '历史记录', icon: '📋', type: 'panel' as const },
-    { id: 'ai-complexity' as const, label: 'AI复杂度分析', icon: '🤖', type: 'action' as const },
   ];
 
   constructor(public store: AlgorithmStore) {}
