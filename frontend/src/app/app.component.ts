@@ -2,6 +2,8 @@ import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { AlgorithmStore } from './store/algorithm.store';
+import { AuthStore } from './store/auth.store';
+import { AuthComponent } from './components/auth/auth.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { ControlPanelComponent } from './components/control-panel/control-panel.component';
 import { InputConfigComponent } from './components/input-config/input-config.component';
@@ -21,6 +23,7 @@ import { AssessmentComponent } from './components/assessment/assessment.componen
   imports: [
     CommonModule,
     RouterOutlet,
+    AuthComponent,
     SidebarComponent,
     ControlPanelComponent,
     InputConfigComponent,
@@ -59,7 +62,7 @@ export class AppComponent implements OnInit {
     };
   });
 
-  constructor(public store: AlgorithmStore) {}
+  constructor(public store: AlgorithmStore, public auth: AuthStore) {}
 
   ngOnInit(): void {}
 }

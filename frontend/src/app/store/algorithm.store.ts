@@ -382,7 +382,10 @@ export class AlgorithmStore {
   setSearchData(arr: number[], target: number): void {
     this.searchArray.set(arr); this.searchTarget.set(target);
   }
-  setGraphData(d: GraphData): void { this.graphData.set(d); }
+  setGraphData(d: GraphData): void {
+    this.graphData.set(d);
+    this.reset();
+  }
   setGraphStart(id: string): void { this.graphStart.set(id); }
   setGraphEnd(id: string): void { this.graphEnd.set(id); }
   setKnapsackItems(items: KnapsackItem[], cap: number): void {
