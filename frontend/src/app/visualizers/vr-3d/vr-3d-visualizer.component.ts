@@ -19,6 +19,8 @@ import { LinkedListRenderer } from './renderers/linked-list.renderer';
 import { BinaryTreeRenderer } from './renderers/binary-tree.renderer';
 import { BPlusTreeRenderer } from './renderers/b-plus-tree.renderer';
 import { AlgorithmStore } from '../../store/algorithm.store';
+import { BPlusTreeAnimator } from './animators/b-plus-tree.animator';
+import { StructureAnimator, AnimationContext } from './animators/structure-animator.interface';
 
 @Component({
     selector: 'app-vr-3d-visualizer',
@@ -39,15 +41,9 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     private animationId: number | null = null;
     private objects: THREE.Object3D[] = [];
     private threeReady = false;
-
-    structureTypes = [
-        { id: 'array' as const, label: '数组' },
-        { id: 'stack' as const, label: '栈' },
-        { id: 'queue' as const, label: '队列' },
-        { id: 'linked-list' as const, label: '链表' },
-        { id: 'binary-tree' as const, label: '二叉树' },
-        { id: 'b-plus-tree' as const, label: 'B+ 树' },
-    ];
+    private currentAnimator: StructureAnimator | null = null;
+    private isAnimating = false;
+    private tempObjects: THREE.Object3D[] = [];
 
     constructor(public store: AlgorithmStore) {
         effect(() => {
@@ -69,6 +65,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         this.threeReady = true;
         this.renderStructure();
         this.animate();
+        this.initAnimators();
         window.addEventListener('resize', this.handleResize);
     }
 
@@ -215,4 +212,67 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(container.clientWidth, container.clientHeight);
     };
+
+    private animatorsMap = new Map<StructureType, StructureAnimator>();
+
+    private initAnimators(): void {
+        // 注册数据结构对应的动画器
+        this.animatorsMap.set('b-plus-tree', new BPlusTreeAnimator());
+        // 后续可添加 array, stack 等的动画器
+    }
+
+    async onOperate(operationName: string): Promise<void> {
+        if (this.isAnimating) {
+            alert('动画进行中，请稍后再试');
+            return;
+        }
+        const animator = this.animatorsMap.get(this.selected());
+        if (!animator) {
+            alert(`${this.selected()} 的操作动画尚未实现`);
+            return;
+        }
+
+        this.isAnimating = true;
+        // 临时禁用轨道控制
+        this.controls.enabled = false;
+
+        try {
+            const ctx: AnimationContext = {
+                scene: this.scene,
+                camera: this.camera,
+                controls: this.controls,
+                addTemporaryObject: (obj) => {
+                    this.tempObjects.push(obj);
+                    this.scene.add(obj);
+                },
+                clearTemporaryObjects: () => {
+                    this.tempObjects.forEach(obj => this.scene.remove(obj));
+                    this.tempObjects = [];
+                },
+                data: this.store.vr3dData(),
+                updateData: (newData) => {
+                    this.store.setVr3dData(newData.values);
+                    // 等待下一个渲染周期重新绘制结构
+                    setTimeout(() => this.renderStructure(), 100);
+                }
+            };
+            await animator.performOperation(operationName, ctx);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            this.isAnimating = false;
+            this.controls.enabled = true;
+            this.clearTemporaryObjects();
+        }
+    }
+
+    private clearTemporaryObjects(): void {
+        this.tempObjects.forEach(obj => this.scene.remove(obj));
+        this.tempObjects = [];
+    }
+
+    // 添加公共方法供模板调用
+    performOperation(opName: string): void {
+        this.onOperate(opName).then(r => {});
+    }
 }

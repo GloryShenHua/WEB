@@ -50,6 +50,15 @@ export class BPlusTreeRenderer {
                     : 0x3b82f6;
 
             const box = ThreeObjectFactory.createWideBox(node.text, color);
+
+            box.userData = {
+                nodeType: 'bplus-node',
+                nodeId: node.id,
+                keys: node.keys,
+                isLeaf: node.isLeaf,
+                level: node.level,
+                originalColor: color,
+            };
             box.position.set(node.x, node.y, node.z);
             ctx.addObject(box);
         });
