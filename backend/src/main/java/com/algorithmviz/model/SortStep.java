@@ -18,6 +18,7 @@ public class SortStep {
     private List<Integer> mergeLeft;
     private List<Integer> mergeRight;
     private Integer mergeTarget;
+    private String phase;
 
     public static Builder builder() { return new Builder(); }
 
@@ -38,6 +39,7 @@ public class SortStep {
         public Builder mergeLeft(List<Integer> v) { s.mergeLeft = v; return this; }
         public Builder mergeRight(List<Integer> v) { s.mergeRight = v; return this; }
         public Builder mergeTarget(Integer v) { s.mergeTarget = v; return this; }
+        public Builder phase(String v) { s.phase = v; return this; }
         public SortStep build() { return s; }
     }
 
@@ -56,5 +58,6 @@ public class SortStep {
     public List<Integer> getMergeLeft() { return mergeLeft; }
     public List<Integer> getMergeRight() { return mergeRight; }
     public Integer getMergeTarget() { return mergeTarget; }
+    public String getPhase() { return phase; }
 }
 

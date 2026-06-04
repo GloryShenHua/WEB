@@ -27,7 +27,7 @@ public class SearchService {
                 .mid((left + right) / 2).target(target)
                 .found(null).eliminated(null)
                 .description("在有序数组中查找目标值 " + target + "，初始范围 [0, " + right + "]")
-                .codeLine(1).comparisons(comparisons).build());
+                .codeLine(1).comparisons(comparisons).phase("init").build());
 
         while (left <= right) {
             int mid = (left + right) / 2;
@@ -38,28 +38,28 @@ public class SearchService {
                     .found(null).eliminated(null)
                     .description("计算中间索引 mid = (" + left + " + " + right + ") / 2 = " + mid
                             + "，arr[mid] = " + array.get(mid))
-                    .codeLine(2).comparisons(comparisons).build());
+                    .codeLine(2).comparisons(comparisons).phase("calculate_mid").build());
 
             if (array.get(mid).equals(target)) {
                 steps.add(SearchStep.builder()
                         .array(array).left(left).right(right).mid(mid).target(target)
                         .found(true).eliminated(null)
                         .description("✓ 找到目标值 " + target + "，位于索引 " + mid + "！")
-                        .codeLine(3).comparisons(comparisons).build());
+                        .codeLine(3).comparisons(comparisons).phase("found").build());
                 return steps;
             } else if (array.get(mid) < target) {
                 steps.add(SearchStep.builder()
                         .array(array).left(left).right(right).mid(mid).target(target)
                         .found(null).eliminated("left")
                         .description("arr[mid]=" + array.get(mid) + " < " + target + "，排除左半部分，left = " + (mid + 1))
-                        .codeLine(4).comparisons(comparisons).build());
+                        .codeLine(4).comparisons(comparisons).phase("eliminate").build());
                 left = mid + 1;
             } else {
                 steps.add(SearchStep.builder()
                         .array(array).left(left).right(right).mid(mid).target(target)
                         .found(null).eliminated("right")
                         .description("arr[mid]=" + array.get(mid) + " > " + target + "，排除右半部分，right = " + (mid - 1))
-                        .codeLine(5).comparisons(comparisons).build());
+                        .codeLine(5).comparisons(comparisons).phase("eliminate").build());
                 right = mid - 1;
             }
         }
@@ -69,7 +69,7 @@ public class SearchService {
                 .mid((left + right) / 2).target(target)
                 .found(false).eliminated(null)
                 .description("✗ 未找到目标值 " + target)
-                .codeLine(6).comparisons(comparisons).build());
+                .codeLine(6).comparisons(comparisons).phase("not_found").build());
         return steps;
     }
 }

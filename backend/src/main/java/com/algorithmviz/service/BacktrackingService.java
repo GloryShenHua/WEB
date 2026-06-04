@@ -25,6 +25,13 @@ public class BacktrackingService {
         int[] backtracks = {0};
         int[] solutionsFound = {0};
 
+        steps.add(NQueensStep.builder()
+                .board(toList(board)).n(n).currentRow(0).currentCol(-1)
+                .conflicts(List.of()).placing(null).removing(null)
+                .description("N 皇后初始化：创建 " + n + "×" + n + " 棋盘，开始尝试放置")
+                .codeLine(1).backtracks(backtracks[0]).solutionsFound(solutionsFound[0])
+                .solutions(List.of()).phase("init").build());
+
         solveNQueens(0, n, board, allSolutions, backtracks, solutionsFound, steps);
 
         steps.add(NQueensStep.builder()
@@ -32,7 +39,7 @@ public class BacktrackingService {
                 .conflicts(List.of()).placing(null).removing(null)
                 .description("✓ N 皇后求解完成！共找到 " + solutionsFound[0] + " 个解")
                 .codeLine(6).backtracks(backtracks[0]).solutionsFound(solutionsFound[0])
-                .solutions(new ArrayList<>(allSolutions)).build());
+                .solutions(new ArrayList<>(allSolutions)).phase("done").build());
 
         return steps;
     }
@@ -50,7 +57,7 @@ public class BacktrackingService {
                     .conflicts(List.of()).placing(null).removing(null)
                     .description("🎉 找到第 " + solutionsFound[0] + " 个解！棋盘配置：[" + sol.toString().replaceAll("[\\[\\] ]", "") + "]")
                     .codeLine(2).backtracks(backtracks[0]).solutionsFound(solutionsFound[0])
-                    .solutions(new ArrayList<>(allSolutions)).build());
+                    .solutions(new ArrayList<>(allSolutions)).phase("solution_found").build());
             return;
         }
 
@@ -64,7 +71,7 @@ public class BacktrackingService {
                             ? "尝试在 (" + row + ", " + col + ") 放置皇后 → 安全！"
                             : "尝试在 (" + row + ", " + col + ") 放置皇后 → 冲突！")
                     .codeLine(3).backtracks(backtracks[0]).solutionsFound(solutionsFound[0])
-                    .solutions(new ArrayList<>(allSolutions)).build());
+                    .solutions(new ArrayList<>(allSolutions)).phase("try_place").build());
 
             if (conflicts.isEmpty()) {
                 board[row] = col;
@@ -73,7 +80,7 @@ public class BacktrackingService {
                         .conflicts(List.of()).placing(new int[]{row, col}).removing(null)
                         .description("✓ 在 (" + row + ", " + col + ") 放置皇后，进入下一行")
                         .codeLine(4).backtracks(backtracks[0]).solutionsFound(solutionsFound[0])
-                        .solutions(new ArrayList<>(allSolutions)).build());
+                        .solutions(new ArrayList<>(allSolutions)).phase("place").build());
 
                 solveNQueens(row + 1, n, board, allSolutions, backtracks, solutionsFound, steps);
 
@@ -84,7 +91,7 @@ public class BacktrackingService {
                         .conflicts(List.of()).placing(null).removing(new int[]{row, col})
                         .description("回溯：撤销 (" + row + ", " + col + ") 的皇后，尝试下一列")
                         .codeLine(5).backtracks(backtracks[0]).solutionsFound(solutionsFound[0])
-                        .solutions(new ArrayList<>(allSolutions)).build());
+                        .solutions(new ArrayList<>(allSolutions)).phase("backtrack").build());
             }
         }
     }
