@@ -58,6 +58,19 @@ export class SidebarComponent {
         { id: 'n-queens', label: 'N 皇后 / 八皇后', complexity: 'O(n!)' },
       ],
     },
+    {
+      category: '分治算法', icon: '🌳',
+      items: [
+        { id: 'karatsuba', label: '大整数乘法 Karatsuba', complexity: 'O(n^1.585)' },
+      ],
+    },
+    {
+      category: 'VR/3D',
+      icon: '🕶',
+      items: [
+        { id: 'data-structure-3d', label: '3D 数据结构学习', complexity: '' },
+      ],
+    }
   ];
 
   compareSiblings = computed(() => {
