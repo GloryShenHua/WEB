@@ -1,4 +1,6 @@
-<div class="h-screen flex flex-col bg-slate-950 text-white overflow-hidden">
+<app-auth *ngIf="!auth.isAuthenticated()" />
+
+<div *ngIf="auth.isAuthenticated()" class="h-screen flex flex-col bg-slate-950 text-white overflow-hidden">
 
   <!-- Header -->
   <header class="flex items-center justify-between px-5 py-3 bg-slate-900 border-b border-slate-700 flex-shrink-0 z-20">
@@ -19,18 +21,33 @@
       </div>
     </div>
 
-    <nav class="flex gap-1">
+    <div class="flex items-center gap-3">
+      <nav class="flex gap-1">
       <button
         *ngFor="let tab of tabs"
         (click)="tab.type === 'action' ? store.openAiComplexityDialog() : store.setActivePanel(tab.id)"
         [class]="tab.type === 'panel' && store.activePanel() === tab.id
-        ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
-        : tab.type === 'action'
-          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-purple-600 text-white hover:bg-purple-500'
-          : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800'">
-      {{ tab.icon }} {{ tab.label }}
+          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
+          : tab.type === 'action'
+            ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-purple-600 text-white hover:bg-purple-500'
+            : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800'">
+        {{ tab.icon }} {{ tab.label }}
+      </button>
+      </nav>
+
+    <div class="hidden sm:flex items-center gap-2 border-l border-slate-700 pl-3">
+      <div class="w-7 h-7 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-blue-300">
+        {{ auth.currentUser()?.displayName?.slice(0, 1) }}
+      </div>
+      <span class="text-sm text-slate-300 max-w-24 truncate">{{ auth.currentUser()?.displayName }}</span>
+    </div>
+
+    <button
+      (click)="auth.logout()"
+      class="px-2.5 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800">
+      退出
     </button>
-  </nav>
+  </div>
 </header>
 
   <!-- Error Banner -->
