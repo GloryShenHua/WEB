@@ -50,4 +50,8 @@ export class AlgorithmService {
   deleteHistory(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/history/${id}`);
   }
+
+  verifyStep(algorithm: string, params: Record<string, unknown>, targetStepIndex: number): Observable<{ stepData: unknown }> {
+    return this.http.post<{ stepData: unknown }>(`${this.base}/verify-step`, { algorithm, params, targetStepIndex });
+  }
 }

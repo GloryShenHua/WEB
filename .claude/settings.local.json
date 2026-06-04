@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn compile:*)",
+      "Bash(npm install:*)",
+      "Bash(npx ng:*)",
+      "Bash(ls:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mvn spring-boot:run:*)",
+      "Bash(mysql:*)",
+      "Bash(netstat:*)",
+      "Bash(cmd:*)"
+    ]
+  },
+  "outputStyle": "Explanatory"
+}

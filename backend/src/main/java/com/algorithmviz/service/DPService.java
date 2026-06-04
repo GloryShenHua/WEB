@@ -27,7 +27,8 @@ public class DPService {
                 .dp(copyDp(dp)).currentItem(-1).currentWeight(-1)
                 .decision("init")
                 .description("初始化 DP 表：dp[i][w] 表示前 i 件物品、容量为 w 时的最大价值")
-                .codeLine(1).totalValue(0).selectedItems(List.of()).tracePath(List.of()).comparisons(0).build());
+                .codeLine(1).totalValue(0).selectedItems(List.of()).tracePath(List.of()).comparisons(0)
+                .phase("init").build());
 
         for (int i = 1; i <= n; i++) {
             DPRequest.KnapsackItemDto item = items.get(i - 1);
@@ -40,7 +41,8 @@ public class DPService {
                             .decision("skip")
                             .description("物品 " + i + "（" + item.getName() + ", 重量=" + item.getWeight()
                                     + "）超过当前容量 " + w + "，跳过 → dp[" + i + "][" + w + "]=" + dp[i][w])
-                            .codeLine(3).totalValue(dp[i][w]).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons).build());
+                            .codeLine(3).totalValue(dp[i][w]).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons)
+                            .phase("skip_weight").build());
                 } else {
                     int withItem = dp[i - 1][w - item.getWeight()] + item.getValue();
                     int withoutItem = dp[i - 1][w];
@@ -50,7 +52,8 @@ public class DPService {
                             .decision("compare")
                             .description("比较：不取物品 " + i + " = dp[" + (i - 1) + "][" + w + "]=" + withoutItem
                                     + "，取物品 " + i + " = dp[" + (i - 1) + "][" + (w - item.getWeight()) + "]+" + item.getValue() + "=" + withItem)
-                            .codeLine(4).totalValue(Math.max(withItem, withoutItem)).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons).build());
+                            .codeLine(4).totalValue(Math.max(withItem, withoutItem)).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons)
+                            .phase("compare").build());
 
                     if (withItem > withoutItem) {
                         dp[i][w] = withItem;
@@ -58,14 +61,16 @@ public class DPService {
                                 .dp(copyDp(dp)).currentItem(i).currentWeight(w)
                                 .decision("take")
                                 .description("选择取物品 " + i + "（" + item.getName() + "）→ dp[" + i + "][" + w + "] = " + withItem)
-                                .codeLine(5).totalValue(withItem).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons).build());
+                                .codeLine(5).totalValue(withItem).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons)
+                                .phase("take").build());
                     } else {
                         dp[i][w] = withoutItem;
                         steps.add(DPStep.builder()
                                 .dp(copyDp(dp)).currentItem(i).currentWeight(w)
                                 .decision("skip")
                                 .description("选择不取物品 " + i + "（" + item.getName() + "）→ dp[" + i + "][" + w + "] = " + withoutItem)
-                                .codeLine(5).totalValue(withoutItem).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons).build());
+                                .codeLine(5).totalValue(withoutItem).selectedItems(List.of()).tracePath(List.of()).comparisons(comparisons)
+                                .phase("skip").build());
                     }
                 }
             }
@@ -93,7 +98,8 @@ public class DPService {
                 .dp(copyDp(dp)).currentItem(-1).currentWeight(-1)
                 .decision(null)
                 .description("✓ 背包问题求解完成！最大价值 = " + dp[n][capacity] + "，选取物品：" + selectedNames)
-                .codeLine(6).totalValue(dp[n][capacity]).selectedItems(selectedItems).tracePath(tracePath).comparisons(comparisons).build());
+                .codeLine(6).totalValue(dp[n][capacity]).selectedItems(selectedItems).tracePath(tracePath).comparisons(comparisons)
+                .phase("traceback").build());
 
         return steps;
     }

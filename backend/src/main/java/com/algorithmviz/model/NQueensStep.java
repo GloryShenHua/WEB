@@ -15,6 +15,7 @@ public class NQueensStep {
     private int backtracks;
     private int solutionsFound;
     private List<List<Integer>> solutions;
+    private String phase;
 
     public static Builder builder() { return new Builder(); }
 
@@ -32,6 +33,7 @@ public class NQueensStep {
         public Builder backtracks(int v) { s.backtracks = v; return this; }
         public Builder solutionsFound(int v) { s.solutionsFound = v; return this; }
         public Builder solutions(List<List<Integer>> v) { s.solutions = v; return this; }
+        public Builder phase(String v) { s.phase = v; return this; }
         public NQueensStep build() { return s; }
     }
 
@@ -47,5 +49,6 @@ public class NQueensStep {
     public int getBacktracks() { return backtracks; }
     public int getSolutionsFound() { return solutionsFound; }
     public List<List<Integer>> getSolutions() { return solutions; }
+    public String getPhase() { return phase; }
 }
 

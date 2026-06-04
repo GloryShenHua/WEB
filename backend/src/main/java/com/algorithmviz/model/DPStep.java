@@ -13,6 +13,7 @@ public class DPStep {
     private List<Integer> selectedItems;
     private List<int[]> tracePath;
     private int comparisons;
+    private String phase;
 
     public static Builder builder() { return new Builder(); }
 
@@ -28,6 +29,7 @@ public class DPStep {
         public Builder selectedItems(List<Integer> v) { s.selectedItems = v; return this; }
         public Builder tracePath(List<int[]> v) { s.tracePath = v; return this; }
         public Builder comparisons(int v) { s.comparisons = v; return this; }
+        public Builder phase(String v) { s.phase = v; return this; }
         public DPStep build() { return s; }
     }
 
@@ -41,5 +43,6 @@ public class DPStep {
     public List<Integer> getSelectedItems() { return selectedItems; }
     public List<int[]> getTracePath() { return tracePath; }
     public int getComparisons() { return comparisons; }
+    public String getPhase() { return phase; }
 }
 
