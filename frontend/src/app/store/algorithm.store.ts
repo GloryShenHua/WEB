@@ -4,6 +4,7 @@ import {
   AppState, AlgorithmCategory, AlgorithmId, AnyStep,
   GraphData, KnapsackItem
 } from '../models/algorithm.models';
+import {CustomStructureData, StructureType} from "../visualizers/vr-3d/renderers/structure-renderer.types";
 
 const DEFAULT_GRAPH: GraphData = {
   directed: false,
@@ -144,6 +145,7 @@ export class AlgorithmStore {
   isLoading     = signal(false);
   error         = signal<string | null>(null);
   activePanel   = signal<'visualizer' | 'history' | 'assessment'>('visualizer');
+  aiDialogOpen  = signal(false);
 
   sortArray     = signal<number[]>([64, 34, 25, 12, 22, 11, 90]);
   searchArray   = signal<number[]>([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
@@ -154,6 +156,10 @@ export class AlgorithmStore {
   knapsackItems = signal<KnapsackItem[]>(DEFAULT_KNAPSACK);
   knapsackCap   = signal(8);
   queensN       = signal(6);
+  divideX       = signal('12345678');
+  divideY       = signal('87654321');
+  vr3dStructure = signal<StructureType>('array');
+  vr3dData      = signal<CustomStructureData>({ values: ['10', '20', '30', '40', '50'] });
 
   // ---- Compare mode signals ----
   compareMode      = signal(false);
@@ -207,6 +213,8 @@ export class AlgorithmStore {
       'prim': 'graph', 'kruskal': 'graph', 'astar': 'graph',
       'knapsack': 'dp',
       'n-queens': 'backtracking',
+      'karatsuba': 'divide-conquer',
+      'data-structure-3d': 'vr-3d',
     };
     this.category.set(catMap[id] ?? 'sorting');
     this.steps.set([]);
@@ -244,6 +252,13 @@ export class AlgorithmStore {
       this.isLoading.set(false);
       console.error(err);
     };
+
+    if (cat === 'vr-3d') {
+      this.steps.set([{ type: 'vr-3d' } as any]);
+      this.currentStep.set(0);
+      this.isLoading.set(false);
+      return;
+    }
 
     this.dispatchRun(algo, cat, handleResponse, handleError);
   }
@@ -292,6 +307,10 @@ export class AlgorithmStore {
       });
     } else if (cat === 'backtracking') {
       this.svc.runBacktracking(algo, this.queensN()).subscribe({
+        next: r => onSuccess(r.steps), error: onError,
+      });
+    } else if (cat === 'divide-conquer') {
+      this.svc.runDivideConquer(algo, this.divideX(), this.divideY()).subscribe({
         next: r => onSuccess(r.steps), error: onError,
       });
     }
@@ -389,6 +408,61 @@ export class AlgorithmStore {
     this.knapsackItems.set(items); this.knapsackCap.set(cap);
   }
   setQueensN(n: number): void { this.queensN.set(n); }
+  setDivideNumbers(x: string, y: string): void {
+    this.divideX.set(x);
+    this.divideY.set(y);
+  }
+  setVr3dStructure(type: StructureType): void {
+    this.vr3dStructure.set(type);
+    this.vr3dData.set({ values: this.defaultVr3dValues(type) });
+  }
+  setVr3dData(values: string[]): void {
+    this.vr3dData.set({ values });
+  }
+  randomVr3dData(): void {
+    const type = this.vr3dStructure();
+
+    if (type === 'linked-list') {
+      const pool = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+      const n = 3 + Math.floor(Math.random() * 4);
+      this.vr3dData.set({ values: pool.slice(0, n) });
+      return;
+    }
+
+    if (type === 'binary-tree') {
+      const sizes = [7, 15, 31];
+      const n = sizes[Math.floor(Math.random() * sizes.length)];
+      const values = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
+      this.vr3dData.set({ values });
+      return;
+    }
+
+    if (type === 'b-plus-tree') {
+      const n = 18 + Math.floor(Math.random() * 25);
+      const values = Array.from({ length: n }, (_, i) => String((i + 1) * 5));
+      this.vr3dData.set({ values });
+      return;
+    }
+
+    const n = 4 + Math.floor(Math.random() * 5);
+    const values = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
+    this.vr3dData.set({ values });
+  }
+
+  private defaultVr3dValues(type: StructureType): string[] {
+    switch (type) {
+      case 'array':
+      case 'stack':
+      case 'queue':
+        return ['10', '20', '30', '40', '50'];
+      case 'linked-list':
+        return ['A', 'B', 'C', 'D'];
+      case 'binary-tree':
+        return ['8', '4', '12', '2', '6', '10', '14'];
+      case 'b-plus-tree':
+        return ['10', '20', '30', '40', '50', '60', '70', '80'];
+    }
+  }
   setActivePanel(p: 'visualizer' | 'history' | 'assessment'): void { this.activePanel.set(p); }
 
   toggleCompareMode(): void {
@@ -409,6 +483,15 @@ export class AlgorithmStore {
       this.compareSteps.set([]);
       this.compareCurrentStep.set(0);
     }
+  }
+
+  openAiComplexityDialog(): void {
+    this.activePanel.set('visualizer');
+    this.aiDialogOpen.set(true);
+  }
+
+  closeAiComplexityDialog(): void {
+    this.aiDialogOpen.set(false);
   }
 
   reset(): void {

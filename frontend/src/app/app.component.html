@@ -4,6 +4,15 @@
   <header class="flex items-center justify-between px-5 py-3 bg-slate-900 border-b border-slate-700 flex-shrink-0 z-20">
     <div class="flex items-center gap-3">
       <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-lg font-bold">λ</div>
+      <!-- 将λ替换为图片
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center">
+        <img
+        class="size-[1.8rem] object-contain"
+        src="/favicon.ico"
+        alt="网站图标"
+        />
+      </div>
+        -->
       <div>
         <h1 class="font-bold text-white leading-none">算法与复杂度可视化学习平台</h1>
         <p class="text-xs text-slate-500 leading-none mt-0.5">Angular + Spring Boot</p>
@@ -13,14 +22,16 @@
     <nav class="flex gap-1">
       <button
         *ngFor="let tab of tabs"
-        (click)="store.setActivePanel(tab.id)"
-        [class]="store.activePanel() === tab.id
-          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
+        (click)="tab.type === 'action' ? store.openAiComplexityDialog() : store.setActivePanel(tab.id)"
+        [class]="tab.type === 'panel' && store.activePanel() === tab.id
+        ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white'
+        : tab.type === 'action'
+          ? 'px-3 py-1.5 rounded-md text-sm font-medium bg-purple-600 text-white hover:bg-purple-500'
           : 'px-3 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800'">
-        {{ tab.icon }} {{ tab.label }}
-      </button>
-    </nav>
-  </header>
+      {{ tab.icon }} {{ tab.label }}
+    </button>
+  </nav>
+</header>
 
   <!-- Error Banner -->
   <div *ngIf="store.error()" class="bg-red-900/80 border-b border-red-700 px-5 py-2 text-sm text-red-200 flex items-center justify-between">
@@ -82,6 +93,9 @@
         <!-- Complexity Analysis Panel (non-compare mode) -->
         <app-complexity-panel *ngIf="!store.compareMode()" />
 
+        <!-- AI Complexity Analysis Dialog -->
+        <app-ai-complexity-dialog />
+
         <!-- Loading -->
         <div *ngIf="store.isLoading()" class="flex-1 flex items-center justify-center">
           <div class="flex flex-col items-center gap-3 text-slate-400">
@@ -101,11 +115,15 @@
 
         <!-- Normal mode visualizers -->
         <ng-container *ngIf="!store.isLoading() && store.steps().length > 0 && !store.compareMode()">
-          <app-sorting-visualizer   *ngIf="store.category() === 'sorting'" />
-          <app-graph-visualizer     *ngIf="store.category() === 'graph'" />
-          <app-search-visualizer    *ngIf="store.category() === 'search'" />
-          <app-dp-visualizer        *ngIf="store.category() === 'dp'" />
-          <app-n-queens-visualizer  *ngIf="store.category() === 'backtracking'" />
+          <div class="flex-1 min-h-0 overflow-hidden">
+            <app-sorting-visualizer   *ngIf="store.category() === 'sorting'" />
+            <app-graph-visualizer     *ngIf="store.category() === 'graph'" />
+            <app-search-visualizer    *ngIf="store.category() === 'search'" />
+            <app-dp-visualizer        *ngIf="store.category() === 'dp'" />
+            <app-n-queens-visualizer  *ngIf="store.category() === 'backtracking'" />
+            <app-divide-conquer-visualizer *ngIf="store.category() === 'divide-conquer'" />
+            <app-vr-3d-visualizer *ngIf="store.category() === 'vr-3d'" />
+          </div>
         </ng-container>
 
         <!-- Compare mode: split view -->

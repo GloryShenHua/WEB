@@ -1,12 +1,14 @@
 // ===================== COMMON =====================
-export type AlgorithmCategory = 'sorting' | 'graph' | 'search' | 'dp' | 'backtracking';
+export type AlgorithmCategory = 'sorting' | 'graph' | 'search' | 'dp' | 'backtracking' | 'divide-conquer'|'vr-3d';
 
 export type AlgorithmId =
   | 'quick-sort' | 'merge-sort' | 'bubble-sort' | 'heap-sort' | 'insertion-sort'
   | 'binary-search'
   | 'dijkstra' | 'bfs' | 'dfs' | 'prim' | 'kruskal' | 'astar'
   | 'knapsack'
-  | 'n-queens';
+  | 'n-queens'
+  | 'karatsuba'
+  | 'data-structure-3d';
 
 export interface Metrics {
   comparisons: number;
@@ -135,7 +137,42 @@ export interface NQueensStep {
   phase: string;
 }
 
-export type AnyStep = SortStep | GraphStep | SearchStep | DPStep | NQueensStep;
+// ===================== DIVIDE & CONQUER =====================
+export interface DivideConquerTreeNode {
+  id: string;
+  parentId: string | null;
+  label: string;
+  x: string;
+  y: string;
+  result: string | null;
+  depth: number;
+  state: 'pending' | 'current' | 'done';
+}
+
+export interface DivideConquerStep {
+  tree: DivideConquerTreeNode[];
+  currentNodeId: string | null;
+  phase: 'divide' | 'split' | 'base' | 'z2' | 'z0' | 'z1' | 'combine' | 'finish';
+  x: string;
+  y: string;
+  a: string;
+  b: string;
+  c: string;
+  d: string;
+  split: number;
+  z2: string;
+  z1: string;
+  z0: string;
+  result: string;
+  formula: string;
+  description: string;
+  codeLine: number;
+  depth: number;
+  multiplications: number;
+  additions: number;
+}
+
+export type AnyStep = SortStep | GraphStep | SearchStep | DPStep | NQueensStep | DivideConquerStep;
 
 // ===================== API RESPONSE =====================
 export interface AlgorithmResponse<T> {
@@ -156,6 +193,24 @@ export interface RunHistory {
   swaps: number;
   executionTimeMs: number;
   createdAt: string;
+}
+// ===================== ALGORITHM COMPLEXITY Analysis=====================
+export interface AlgorithmComplexityRequest {
+  code: string;
+  language: string;
+  caseType: string;
+}
+
+export interface AlgorithmComplexityAnalysis {
+  timeComplexityWorst: string;
+  timeComplexityAverage: string;
+  timeComplexityBest: string;
+  spaceComplexity: string;
+  reasoningSteps: string[];
+  assumptions: string[];
+  optimizationSuggestions: string[];
+  confidence: number;
+  rawText?: string;
 }
 
 // ===================== APP STATE =====================
@@ -178,6 +233,8 @@ export interface AppState {
   knapsackItems: KnapsackItem[];
   knapsackCapacity: number;
   queensN: number;
+  divideX: string;
+  divideY: string;
 
   activePanel: 'visualizer' | 'history' | 'assessment';
 }

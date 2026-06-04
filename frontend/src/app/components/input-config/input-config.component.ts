@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { GraphData, KnapsackItem } from '../../models/algorithm.models';
+import { StructureType } from '../../visualizers/vr-3d/renderers/structure-renderer.types';
 
 @Component({
   selector: 'app-input-config',
@@ -34,6 +35,22 @@ export class InputConfigComponent implements OnInit {
   // ---- N-Queens ----
   queensN = 6;
 
+  // ---- Divide & Conquer ----
+  divideX = '12345678';
+  divideY = '87654321';
+
+  // ---- VR/3D ----
+  vr3dInput = '';
+
+  vr3dTypes = [
+    { id: 'array' as const, label: '数组' },
+    { id: 'stack' as const, label: '栈' },
+    { id: 'queue' as const, label: '队列' },
+    { id: 'linked-list' as const, label: '链表' },
+    { id: 'binary-tree' as const, label: '二叉树' },
+    { id: 'b-plus-tree' as const, label: 'B+ 树' },
+  ];
+
   constructor(public store: AlgorithmStore) {}
 
   ngOnInit(): void {
@@ -42,6 +59,9 @@ export class InputConfigComponent implements OnInit {
     this.searchTargetInput = this.store.searchTarget();
     this.capacity = this.store.knapsackCap();
     this.queensN = this.store.queensN();
+    this.divideX = this.store.divideX();
+    this.divideY = this.store.divideY();
+    this.vr3dInput = this.store.vr3dData().values.join(', ');
     this.graphStartInput = this.store.graphStart();
     this.graphEndInput = this.store.graphEnd();
 
@@ -200,6 +220,73 @@ export class InputConfigComponent implements OnInit {
   // ---- N-Queens ----
   applyQueens(): void {
     this.store.setQueensN(this.queensN);
+  }
+
+  // ---- Divide & Conquer ----
+  applyDivideConquer(): void {
+    const x = this.divideX.replace(/\D/g, '');
+    const y = this.divideY.replace(/\D/g, '');
+    if (x.length > 0 && y.length > 0) {
+      this.divideX = x;
+      this.divideY = y;
+      this.store.setDivideNumbers(x, y);
+    }
+  }
+
+  randomDivideConquer(): void {
+    const makeNumber = () => {
+      const len = 6 + Math.floor(Math.random() * 5);
+      let value = String(Math.floor(Math.random() * 9) + 1);
+      for (let i = 1; i < len; i++) {
+        value += String(Math.floor(Math.random() * 10));
+      }
+      return value;
+    };
+
+    this.divideX = makeNumber();
+    this.divideY = makeNumber();
+    this.store.setDivideNumbers(this.divideX, this.divideY);
+  }
+
+  // ---- VR/3D ----
+  selectVr3dStructure(type: StructureType): void {
+    this.store.setVr3dStructure(type);
+    this.vr3dInput = this.store.vr3dData().values.join(', ');
+  }
+
+  applyVr3dData(): void {
+    const values = this.vr3dInput
+      .split(/[,\s]+/)
+      .map(v => v.trim())
+      .filter(Boolean)
+      .slice(0, 63);
+
+    if (values.length > 0) {
+      this.store.setVr3dData(values);
+      this.vr3dInput = values.join(', ');
+    }
+  }
+
+  randomVr3dData(): void {
+    this.store.randomVr3dData();
+    this.vr3dInput = this.store.vr3dData().values.join(', ');
+  }
+
+  get vr3dInputHint(): string {
+    switch (this.store.vr3dStructure()) {
+      case 'array':
+        return '数组：输入元素序列，如 10, 20, 30, 40';
+      case 'stack':
+        return '栈：从栈底到栈顶输入，如 A, B, C, D';
+      case 'queue':
+        return '队列：从队头到队尾输入，如 A, B, C, D';
+      case 'linked-list':
+        return '链表：按 next 指针顺序输入，如 A, B, C, D';
+      case 'binary-tree':
+        return '二叉树：按层序输入，如 8, 4, 12, 2, 6, 10, 14，最多 63 个节点';
+      case 'b-plus-tree':
+        return 'B+ 树：输入关键字，系统每 3 个关键字生成一个叶子节点';
+    }
   }
 
   get category() { return this.store.category(); }

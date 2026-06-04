@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AlgorithmResponse, SortStep, SearchStep, GraphStep, DPStep, NQueensStep,
-  GraphData, KnapsackItem, RunHistory
+  GraphData, KnapsackItem, RunHistory, DivideConquerStep,
+  AlgorithmComplexityAnalysis, AlgorithmComplexityRequest
 } from '../models/algorithm.models';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +32,14 @@ export class AlgorithmService {
 
   runBacktracking(algorithm: string, n: number): Observable<AlgorithmResponse<NQueensStep>> {
     return this.http.post<AlgorithmResponse<NQueensStep>>(`${this.base}/backtracking`, { algorithm, n });
+  }
+
+  runDivideConquer(algorithm: string, x: string, y: string): Observable<AlgorithmResponse<DivideConquerStep>> {
+    return this.http.post<AlgorithmResponse<DivideConquerStep>>(`${this.base}/divide-conquer`, { algorithm, x, y });
+  }
+
+  analyzeAlgorithmComplexity(request: AlgorithmComplexityRequest): Observable<AlgorithmComplexityAnalysis> {
+    return this.http.post<AlgorithmComplexityAnalysis>(`${this.base}/algorithm-complexity`, request);
   }
 
   getHistory(category?: string): Observable<RunHistory[]> {
