@@ -41,7 +41,6 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     private animationId: number | null = null;
     private objects: THREE.Object3D[] = [];
     private threeReady = false;
-    private currentAnimator: StructureAnimator | null = null;
     private isAnimating = false;
     private tempObjects: THREE.Object3D[] = [];
 
@@ -84,9 +83,6 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    selectStructure(type: StructureType): void {
-        this.store.setVr3dStructure(type);
-    }
 
     private initThree(): void {
         const container = this.canvasContainer.nativeElement;
@@ -273,6 +269,6 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
 
     // 添加公共方法供模板调用
     performOperation(opName: string): void {
-        this.onOperate(opName).then(r => {});
+       void this.onOperate(opName);
     }
 }
