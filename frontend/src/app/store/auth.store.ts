@@ -9,10 +9,12 @@ export class AuthStore {
   isAuthenticated = computed(() => this.currentUser() !== null);
   isLoading = signal(false);
   error = signal<string | null>(null);
+  success = signal<string | null>(null);
 
   constructor(private authService: AuthService) {}
 
   login(username: string, password: string): void {
+    this.success.set(null);
     const normalizedUsername = username.trim();
     if (!normalizedUsername || !password) {
       this.error.set('请输入用户名和密码。');
@@ -27,7 +29,14 @@ export class AuthStore {
     });
   }
 
-  register(username: string, displayName: string, password: string, confirmPassword: string): void {
+  register(
+    username: string,
+    displayName: string,
+    password: string,
+    confirmPassword: string,
+    onSuccess?: () => void,
+  ): void {
+    this.success.set(null);
     const normalizedUsername = username.trim();
     const normalizedDisplayName = displayName.trim();
 
@@ -43,7 +52,11 @@ export class AuthStore {
     this.isLoading.set(true);
     this.error.set(null);
     this.authService.register(normalizedUsername, normalizedDisplayName, password).subscribe({
-      next: user => this.setSession(user),
+      next: () => {
+        this.isLoading.set(false);
+        this.success.set('注册成功，请登录。');
+        onSuccess?.();
+      },
       error: err => this.handleError(err, '注册失败，请确认后端服务已启动。'),
     });
   }
@@ -52,16 +65,19 @@ export class AuthStore {
     localStorage.removeItem(this.sessionKey);
     this.currentUser.set(null);
     this.error.set(null);
+    this.success.set(null);
   }
 
-  clearError(): void {
+  clearFeedback(): void {
     this.error.set(null);
+    this.success.set(null);
   }
 
   private setSession(user: AuthUser): void {
     localStorage.setItem(this.sessionKey, JSON.stringify(user));
     this.currentUser.set(user);
     this.error.set(null);
+    this.success.set(null);
     this.isLoading.set(false);
   }
 

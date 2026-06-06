@@ -24,7 +24,7 @@ export class AuthComponent {
 
   switchMode(mode: 'login' | 'register'): void {
     this.mode = mode;
-    this.auth.clearError();
+    this.auth.clearFeedback();
   }
 
   submitLogin(): void {
@@ -37,6 +37,13 @@ export class AuthComponent {
       this.registerDisplayName,
       this.registerPassword,
       this.registerConfirmPassword,
+      () => {
+        this.loginUsername = this.registerUsername.trim();
+        this.loginPassword = '';
+        this.registerPassword = '';
+        this.registerConfirmPassword = '';
+        this.mode = 'login';
+      },
     );
   }
 }
