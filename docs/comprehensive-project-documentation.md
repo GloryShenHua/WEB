@@ -459,8 +459,10 @@ interface TestScenario {
 
 - **密码安全**：SHA-256(salt + ":" + password)，salt 为 `SecureRandom` 生成的 16 字节随机数
 - **密码比较**：使用 `MessageDigest.isEqual()` 进行常量时间比较，防止时序攻击
-- **会话管理**：前端 `AuthStore` 在内存中保存登录用户信息（id, username, displayName），不持久化 Token
+- **会话管理**：前端 `AuthStore` 基于 Signals 管理状态，含三个核心信号：`currentUser`（当前用户）、`error`（错误消息）、`success`（成功提示）。登录状态持久化至 `localStorage` 中（键名 `algorithm-viz-session`），不依赖后端 Token
 - **简单设计**：无 JWT、无 Session Cookie，适合教学/学习场景
+- **注册后行为**：注册成功后**不自动登录**——而是通过 `onSuccess` 回调切换回登录页面，自动填入已注册用户名，并显示 "注册成功，请登录。" 绿色提示。这避免了注册即登录可能带来的会话混淆问题
+- **反馈管理**：`clearFeedback()` 方法同时清除 `error` 和 `success` 两个信号，在模式切换（登录↔注册）和登出时调用
 
 ### 4.7 3D 数据结构可视化
 
@@ -497,15 +499,71 @@ Vr3dVisualizerComponent (Angular 容器)
 }
 ```
 
-### 4.9 错误处理策略
+### 4.9 错误处理与用户反馈
 
 | 层级 | 策略 |
 |------|------|
 | 前端 HTTP | `AlgorithmService` 每个方法的 `.subscribe()` 均提供 error handler，设置 `store.error` 为中文提示 |
-| 前端校验 | 输入参数（N 皇后 1-12、背包容量>0 等）在 InputConfig 组件中限制范围 |
+| 前端校验 | 输入参数（N 皇后 1-12、背包容量>0 等）在 InputConfig 组件中限制范围；认证表单在 `AuthStore.register()` 中校验密码一致性 |
+| 前端正向反馈 | `AuthStore` 的 `success` 信号用于注册成功后的绿色提示条，与红色的 `error` 信号并列，形成完整的双通道用户反馈 |
 | 后端校验 | DTO 使用 `jakarta.validation` 注解（`@NotNull`, `@NotEmpty`, `@Positive`, `@Min/@Max`） |
-| 后端异常 | Service 层 `IllegalArgumentException` 返回 400 + 英文错误信息 |
+| 后端异常 | Service 层 `IllegalArgumentException` 返回 400 + 英文错误信息；认证失败返回 401 + 中文错误信息 |
 | CORS | 仅允许 `http://localhost:4200`，防止跨站请求 |
+
+---
+
+### 4.10 遇到的问题与改进
+
+#### 问题 1：注册后自动登录的会话安全问题
+
+**现象**（commit `165e821` 之前）：
+用户注册成功后，后端直接返回用户信息，前端直接调用 `setSession(user)` 完成自动登录。用户无需输入密码即可进入主界面。
+
+**问题分析**：
+1. **绕过显式认证**：注册和登录是两个不同的安全边界。自动登录意味着注册端点实际上充当了"免密码登录"的入口。如果注册和登录的密码校验逻辑不一致（例如未来引入邮箱验证），自动登录将成为安全漏洞
+2. **密码记忆确认缺失**：用户可能在注册时误输入密码（即使有 `confirmPassword` 校验，两次输入可能犯同样的错误）。强制重新登录可以让用户确认"我记得我设置的密码"
+3. **注册反馈不明确**：旧流程下用户注册完直接进入主界面，无法区分"注册成功"和"登录成功"两个事件。用户可能不知道自己已经处于已登录状态还是仍在注册流程中
+4. **与业界实践的偏差**：主流 Web 应用（GitHub、Google、大部分 SaaS 产品）在注册后通常要求验证邮箱或重新登录，而非直接创建会话
+
+**改进方案**：
+- 前端 `AuthStore.register()` 不再在注册成功时调用 `setSession()`，而是通过 `onSuccess` 回调通知 `AuthComponent` 执行以下切换：
+  ```typescript
+  // auth.component.ts
+  submitRegister(): void {
+    this.auth.register(..., () => {
+      this.loginUsername = this.registerUsername.trim();  // 预填用户名
+      this.loginPassword = '';                              // 清空密码，要求手动输入
+      this.registerPassword = '';
+      this.registerConfirmPassword = '';
+      this.mode = 'login';                                  // 切换到登录页
+    });
+  }
+  ```
+- 新增 `AuthStore.success` 信号，独立于 `error`，用于正向反馈消息（绿色提示条）
+- `clearError()` 重命名为 `clearFeedback()`，语义上覆盖清除错误和成功两种状态
+- 登录页模板顶部新增条件渲染的成功提示区域：
+  ```html
+  <div *ngIf="auth.success()" class="...text-emerald-300...">
+    {{ auth.success() }}
+  </div>
+  ```
+
+**效果**：注册 → 成功提示 → 手动输入密码登录，形成清晰的 "注册 → 认证" 两步流程。用户知道自己的账号已创建，且密码是自己记住的。
+
+#### 问题 2：API Key 和数据库密码硬编码
+
+**现象**（commit `477cffb` 之前）：
+`application.properties` 中直接写入了并行智算云的 API Key 和明文数据库密码。
+
+**问题分析**：
+1. 代码提交到公开 GitHub 仓库时，API Key 和密码会泄露
+2. 环境切换（开发/测试/生产）时需要手动修改配置文件，容易遗漏
+3. 不符合 [12-Factor App](https://12factor.net/config) 的配置管理原则
+
+**改进方案**：
+- 数据库密码：已有 `DB_PASSWORD` 环境变量支持（commit `eff8979`），配置文件中设为空字符串，运行时从环境变量读取
+- API Key：同样置空，部署时通过环境变量注入
+- 在 `.gitignore` 中确认 `application.properties` 不包含敏感信息
 
 ---
 
@@ -651,8 +709,9 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 ### 6.1 首次使用
 
 1. 浏览器打开 `http://localhost:4200`
-2. 在认证页面注册账号（用户名 3-50 字符，密码至少 6 字符）
-3. 登录后进入主界面
+2. 在认证页面点击"没有账号？立即注册"，注册账号（用户名 3-50 字符，显示名可选，密码至少 6 字符）
+3. 注册成功后，页面自动切换回登录界面，用户名已预填，顶部显示绿色提示"注册成功，请登录。"
+4. 输入密码登录后进入主界面
 
 ### 6.2 基本操作：运行算法
 
@@ -980,6 +1039,8 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 // 响应 (201 Created)
 { "id": 1, "username": "alice", "displayName": "Alice" }
 ```
+
+> **注意**：注册成功后前端**不会自动登录**。`AuthStore.register()` 收到 201 响应后，通过 `onSuccess` 回调将页面切换回登录模式，用户名自动填入，并显示绿色提示 "注册成功，请登录。"。用户需要手动输入密码完成登录。
 
 #### POST /api/auth/login
 
