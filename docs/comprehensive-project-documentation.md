@@ -649,7 +649,7 @@ npm run build
 ```
 
 ### 5.8 Docker 部署（推荐）
-
+#### 5.8.1 本地源代码部署
 ```bash
 # 在项目根目录创建 docker-compose.yml:
 ```
@@ -683,7 +683,70 @@ services:
     depends_on:
       - backend
 ```
+#### 5.8.2 部署到远程服务器
+1. 简介
+- AWS ECS 服务器 (Ubuntu) + Docker 容器 + Nginx 代理，前端静态资源由 Nginx 承载，后端独立容器运行，数据库容器化部署
+- 访问`http://3.212.58.111` （由于是AWS平台，需要访问“外”网）
+```text
+用户 → 公有云公网IP → 宿主机（云服务器）  
+                       ├── Nginx 容器（反向代理 + 前端静态资源）  
+                       ├── 后端 API 容器（Node.js/Java）  
+                       └── 数据库容器（MySQL）
+```
+2. 过程
+- 1.前后端打包
+```shell
+#front
+cd frontend/
+npm install
+ng build --configuration production
+#back
+cd backend/
+mvn clean package -DskipTests
+#上传
+scp -r deploy ubuntu@3.212.58.111:/home/ubuntu/
+```
+- 2.安装docker与mysql
+> mysql需要设定对应密码
+- 3.使用docker构建并启动docker容器
+>需要注意非root用户无docker操纵权限，需要授予权限
+```shell
+#构建
+cd deploy/
+docker compose up -d --build #only once
+#查看对应容器
+#状态应为up
+docker ps -a # 或者 docker compose ps
+#停止项目目录下所有容器
+docker compose stop
+#重新启动容器
+#等同于先执行 docker compose stop 再执行 docker compose start
+#当配置发生较大变动时，使用 docker compose up -d --force-recreate 以确保更改被完全应用并让容器从全新状态开始运行
+docker compose restart 容器名 #one
+docker compose restart #all
 
+#删除当前项目目录下所有容器
+docker compose down
+```
+**文件结构**
+```bash
+├── backend
+│   ├── Dockerfile
+│   └── app.jar
+├── docker-compose.yml
+└── nginx
+    ├── dist
+    │   ├── 3rdpartylicenses.txt
+    │   └── browser
+    │       ├── chunk-DXPD2P6U.js
+    │       ├── chunk-IZB2CETZ.js
+    │       ├── favicon.ico
+    │       ├── index.html
+    │       ├── main-SZEZEQBN.js
+    │       ├── polyfills-FFHMD2TL.js
+    │       └── styles-H3WM2JRZ.css
+    └── nginx.conf 
+```
 ### 5.9 健康检查
 
 ```bash
