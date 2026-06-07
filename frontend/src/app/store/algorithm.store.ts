@@ -1,18 +1,24 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { AlgorithmService } from '../services/algorithm.service';
 import {
-  AppState, AlgorithmCategory, AlgorithmId, AnyStep,
-  GraphData, KnapsackItem
+  AlgorithmCategory,
+  AlgorithmId,
+  AnyStep,
+  GraphData,
+  KnapsackItem,
 } from '../models/algorithm.models';
-import {CustomStructureData, StructureType} from "../visualizers/vr-3d/renderers/structure-renderer.types";
+import {
+  CustomStructureData,
+  StructureType,
+} from '../visualizers/vr-3d/renderers/structure-renderer.types';
 
 const DEFAULT_GRAPH: GraphData = {
   directed: false,
   weighted: true,
   nodes: [
-    { id: 'A', x: 150, y: 80,  label: 'A' },
-    { id: 'B', x: 300, y: 50,  label: 'B' },
-    { id: 'C', x: 450, y: 80,  label: 'C' },
+    { id: 'A', x: 150, y: 80, label: 'A' },
+    { id: 'B', x: 300, y: 50, label: 'B' },
+    { id: 'C', x: 450, y: 80, label: 'C' },
     { id: 'D', x: 150, y: 220, label: 'D' },
     { id: 'E', x: 300, y: 200, label: 'E' },
     { id: 'F', x: 450, y: 220, label: 'F' },
@@ -35,162 +41,248 @@ const DEFAULT_KNAPSACK: KnapsackItem[] = [
   { name: '物品D', weight: 5, value: 6 },
 ];
 
-// Phase sequence and labels for each algorithm
+const ALGORITHM_CATEGORY: Record<string, AlgorithmCategory> = {
+  'quick-sort': 'sorting',
+  'merge-sort': 'sorting',
+  'bubble-sort': 'sorting',
+  'heap-sort': 'sorting',
+  'insertion-sort': 'sorting',
+  'binary-search': 'search',
+  dijkstra: 'graph',
+  bfs: 'graph',
+  dfs: 'graph',
+  prim: 'graph',
+  kruskal: 'graph',
+  astar: 'graph',
+  knapsack: 'dp',
+  'n-queens': 'backtracking',
+  karatsuba: 'divide-conquer',
+  'data-structure-3d': 'vr-3d',
+};
+
 const PHASE_CONFIG: Record<string, { sequence: string[]; labels: Record<string, string> }> = {
   'quick-sort': {
     sequence: ['select_pivot', 'compare', 'swap', 'pivot_placed', 'done'],
     labels: {
-      select_pivot: '选择基准值', compare: '比较分区', swap: '交换元素',
-      pivot_placed: '基准值归位', done: '排序完成',
+      select_pivot: '选择基准',
+      compare: '比较分区',
+      swap: '交换元素',
+      pivot_placed: '基准归位',
+      done: '算法完成',
     },
   },
   'merge-sort': {
     sequence: ['divide', 'merge_setup', 'merge_place', 'done'],
     labels: {
-      divide: '分割数组', merge_setup: '准备合并', merge_place: '归并元素', done: '排序完成',
+      divide: '划分数组',
+      merge_setup: '准备合并',
+      merge_place: '归并元素',
+      done: '算法完成',
     },
   },
   'bubble-sort': {
     sequence: ['compare', 'swap', 'bubble_complete', 'done'],
     labels: {
-      compare: '比较相邻元素', swap: '交换元素', bubble_complete: '本轮完成', done: '排序完成',
+      compare: '比较相邻元素',
+      swap: '交换元素',
+      bubble_complete: '本轮完成',
+      done: '算法完成',
     },
   },
   'heap-sort': {
     sequence: ['build_heap', 'heapify_compare', 'heapify_swap', 'extract_max', 'done'],
     labels: {
-      build_heap: '建堆', heapify_compare: '堆调整-比较', heapify_swap: '堆调整-交换',
-      extract_max: '提取最大值', done: '排序完成',
+      build_heap: '建堆',
+      heapify_compare: '堆调整比较',
+      heapify_swap: '堆调整交换',
+      extract_max: '提取堆顶',
+      done: '算法完成',
     },
   },
   'insertion-sort': {
     sequence: ['key_select', 'shift', 'insert', 'done'],
     labels: {
-      key_select: '选取关键字', shift: '元素后移', insert: '插入元素', done: '排序完成',
+      key_select: '选取关键值',
+      shift: '元素后移',
+      insert: '插入元素',
+      done: '算法完成',
     },
   },
   'binary-search': {
-    sequence: ['init', 'calculate_mid', 'compare', 'eliminate', 'found', 'not_found'],
+    sequence: ['init', 'calculate_mid', 'compare', 'eliminate', 'done'],
     labels: {
-      init: '初始化', calculate_mid: '计算中点', compare: '比较目标值',
-      eliminate: '排除半区', found: '查找成功', not_found: '查找失败',
+      init: '初始化边界',
+      calculate_mid: '计算中点',
+      compare: '比较目标',
+      eliminate: '排除半区',
+      found: '查找成功',
+      not_found: '查找失败',
+      done: '算法完成',
     },
   },
-  'dijkstra': {
+  dijkstra: {
     sequence: ['init', 'select_min', 'explore_edge', 'update_dist', 'reconstruct_path', 'done'],
     labels: {
-      init: '初始化距离', select_min: '选择最近节点', explore_edge: '探索邻边',
-      update_dist: '更新距离', reconstruct_path: '重建路径', done: '算法完成',
+      init: '初始化距离',
+      select_min: '选择最近节点',
+      explore_edge: '探索邻边',
+      update_dist: '更新距离',
+      reconstruct_path: '重建路径',
+      done: '算法完成',
     },
   },
-  'bfs': {
+  bfs: {
     sequence: ['init', 'dequeue', 'discover_neighbor', 'reconstruct_path', 'done'],
     labels: {
-      init: '初始化队列', dequeue: '出队节点', discover_neighbor: '发现邻居',
-      reconstruct_path: '重建路径', done: '算法完成',
+      init: '初始化队列',
+      dequeue: '节点出队',
+      discover_neighbor: '发现邻居',
+      reconstruct_path: '重建路径',
+      done: '算法完成',
     },
   },
-  'dfs': {
+  dfs: {
     sequence: ['init', 'pop_stack', 'discover_neighbor', 'reconstruct_path', 'done'],
     labels: {
-      init: '初始化栈', pop_stack: '出栈节点', discover_neighbor: '发现邻居',
-      reconstruct_path: '重建路径', done: '算法完成',
+      init: '初始化栈',
+      pop_stack: '节点出栈',
+      discover_neighbor: '发现邻居',
+      reconstruct_path: '重建路径',
+      done: '算法完成',
     },
   },
-  'prim': {
+  prim: {
     sequence: ['init', 'select_min_edge', 'add_to_mst', 'done'],
     labels: {
-      init: '初始化', select_min_edge: '选择最小边', add_to_mst: '加入MST', done: 'MST完成',
+      init: '初始化',
+      select_min_edge: '选择最小边',
+      add_to_mst: '加入生成树',
+      done: '算法完成',
     },
   },
-  'kruskal': {
+  kruskal: {
     sequence: ['init', 'sort_edges', 'check_cycle', 'add_to_mst', 'skip_edge', 'done'],
     labels: {
-      init: '初始化', sort_edges: '边排序', check_cycle: '检查环路',
-      add_to_mst: '加入MST', skip_edge: '跳过边', done: 'MST完成',
+      init: '初始化',
+      sort_edges: '边排序',
+      check_cycle: '检查环路',
+      add_to_mst: '加入生成树',
+      skip_edge: '跳过边',
+      done: '算法完成',
     },
   },
-  'astar': {
+  astar: {
     sequence: ['init', 'select_min', 'explore_edge', 'update_dist', 'reconstruct_path', 'done'],
     labels: {
-      init: '初始化', select_min: '选择最优节点', explore_edge: '探索邻边',
-      update_dist: '更新估价', reconstruct_path: '重建路径', done: '算法完成',
+      init: '初始化',
+      select_min: '选择最优节点',
+      explore_edge: '探索邻边',
+      update_dist: '更新估价',
+      reconstruct_path: '重建路径',
+      done: '算法完成',
     },
   },
-  'knapsack': {
+  knapsack: {
     sequence: ['init', 'skip_weight', 'compare', 'take', 'skip', 'traceback', 'done'],
     labels: {
-      init: '初始化DP表', skip_weight: '超重跳过', compare: '比较取舍',
-      take: '选取物品', skip: '不选物品', traceback: '回溯方案', done: '求解完成',
+      init: '初始化 DP 表',
+      skip_weight: '超重跳过',
+      compare: '比较取舍',
+      take: '选择物品',
+      skip: '不选物品',
+      traceback: '回溯方案',
+      done: '算法完成',
     },
   },
   'n-queens': {
     sequence: ['init', 'try_place', 'place', 'solution_found', 'backtrack', 'done'],
     labels: {
-      init: '初始化棋盘', try_place: '尝试放置', place: '放置皇后',
-      solution_found: '找到解', backtrack: '回溯', done: '求解完成',
+      init: '初始化棋盘',
+      try_place: '尝试放置',
+      place: '放置皇后',
+      solution_found: '找到解',
+      backtrack: '回溯',
+      done: '算法完成',
+    },
+  },
+  karatsuba: {
+    sequence: ['divide', 'split', 'base', 'z2', 'z0', 'z1', 'combine', 'finish'],
+    labels: {
+      divide: '分治入口',
+      split: '拆分数字',
+      base: '基础乘法',
+      z2: '计算 z2',
+      z0: '计算 z0',
+      z1: '计算 z1',
+      combine: '合并结果',
+      finish: '算法完成',
     },
   },
 };
 
 @Injectable({ providedIn: 'root' })
 export class AlgorithmStore {
-  // ---- Signals ----
-  category      = signal<AlgorithmCategory>('sorting');
-  selectedAlgo  = signal<AlgorithmId>('quick-sort');
-  steps         = signal<AnyStep[]>([]);
-  currentStep   = signal(0);
-  isPlaying     = signal(false);
-  speed         = signal(500);
-  isLoading     = signal(false);
-  error         = signal<string | null>(null);
-  activePanel   = signal<'visualizer' | 'history' | 'assessment'>('visualizer');
-  aiDialogOpen  = signal(false);
+  category = signal<AlgorithmCategory>('sorting');
+  selectedAlgo = signal<AlgorithmId>('quick-sort');
+  steps = signal<AnyStep[]>([]);
+  currentStep = signal(0);
+  isPlaying = signal(false);
+  speed = signal(500);
+  isLoading = signal(false);
+  error = signal<string | null>(null);
+  activePanel = signal<'visualizer' | 'history' | 'assessment'>('visualizer');
+  aiDialogOpen = signal(false);
 
-  sortArray     = signal<number[]>([64, 34, 25, 12, 22, 11, 90]);
-  searchArray   = signal<number[]>([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
-  searchTarget  = signal(7);
-  graphData     = signal<GraphData>(DEFAULT_GRAPH);
-  graphStart    = signal('A');
-  graphEnd      = signal('F');
+  sortArray = signal<number[]>([64, 34, 25, 12, 22, 11, 90]);
+  searchArray = signal<number[]>([1, 3, 5, 7, 9, 11, 13, 15, 17, 19]);
+  searchTarget = signal(7);
+  graphData = signal<GraphData>(DEFAULT_GRAPH);
+  graphStart = signal('A');
+  graphEnd = signal('F');
   knapsackItems = signal<KnapsackItem[]>(DEFAULT_KNAPSACK);
-  knapsackCap   = signal(8);
-  queensN       = signal(6);
-  divideX       = signal('12345678');
-  divideY       = signal('87654321');
+  knapsackCap = signal(8);
+  queensN = signal(6);
+  divideX = signal('12345678');
+  divideY = signal('87654321');
   vr3dStructure = signal<StructureType>('array');
-  vr3dData      = signal<CustomStructureData>({ values: ['10', '20', '30', '40', '50'] });
+  vr3dData = signal<CustomStructureData>({ values: ['10', '20', '30', '40', '50'] });
 
-  // ---- Compare mode signals ----
-  compareMode      = signal(false);
-  compareAlgo      = signal<AlgorithmId>('merge-sort');
-  compareSteps     = signal<AnyStep[]>([]);
+  compareMode = signal(false);
+  compareAlgo = signal<AlgorithmId>('merge-sort');
+  compareSteps = signal<AnyStep[]>([]);
   compareCurrentStep = signal(0);
   compareIsPlaying = signal(false);
   compareIsLoading = signal(false);
-  compareError     = signal<string | null>(null);
+  compareError = signal<string | null>(null);
 
-  // ---- Computed ----
   currentStepData = computed(() => this.steps()[this.currentStep()] ?? null);
-  totalSteps      = computed(() => this.steps().length);
-  canForward      = computed(() => this.currentStep() < this.steps().length - 1);
-  canBackward     = computed(() => this.currentStep() > 0);
+  totalSteps = computed(() => this.steps().length);
+  canForward = computed(() => this.currentStep() < this.steps().length - 1);
+  canBackward = computed(() => this.currentStep() > 0);
 
   compareCurrentStepData = computed(() => this.compareSteps()[this.compareCurrentStep()] ?? null);
-  compareTotalSteps      = computed(() => this.compareSteps().length);
+  compareTotalSteps = computed(() => this.compareSteps().length);
 
-  // ---- Phase computed ----
   phaseConfig = computed(() => PHASE_CONFIG[this.selectedAlgo()] ?? { sequence: [], labels: {} });
 
   currentPhase = computed(() => {
+    const config = this.phaseConfig();
     const step = this.currentStepData();
-    if (!step || !('phase' in step)) return '';
-    return (step as unknown as Record<string, unknown>)['phase'] as string ?? '';
+    if (!step || config.sequence.length === 0) return '';
+
+    if (this.isAtLastStep()) {
+      return this.terminalPhase();
+    }
+
+    const phase = (step as unknown as Record<string, unknown>)['phase'];
+    return typeof phase === 'string' ? phase : '';
   });
 
   currentPhaseIndex = computed(() => {
     const config = this.phaseConfig();
-    return config.sequence.indexOf(this.currentPhase());
+    const index = config.sequence.indexOf(this.currentPhase());
+    if (index >= 0) return index;
+    return this.isAtLastStep() && config.sequence.length > 0 ? config.sequence.length - 1 : -1;
   });
 
   phaseLabel = computed(() => {
@@ -205,33 +297,13 @@ export class AlgorithmStore {
 
   setAlgorithm(id: AlgorithmId): void {
     this.selectedAlgo.set(id);
-    const catMap: Record<string, AlgorithmCategory> = {
-      'quick-sort': 'sorting', 'merge-sort': 'sorting', 'bubble-sort': 'sorting',
-      'heap-sort': 'sorting', 'insertion-sort': 'sorting',
-      'binary-search': 'search',
-      'dijkstra': 'graph', 'bfs': 'graph', 'dfs': 'graph',
-      'prim': 'graph', 'kruskal': 'graph', 'astar': 'graph',
-      'knapsack': 'dp',
-      'n-queens': 'backtracking',
-      'karatsuba': 'divide-conquer',
-      'data-structure-3d': 'vr-3d',
-    };
-    this.category.set(catMap[id] ?? 'sorting');
+    this.category.set(ALGORITHM_CATEGORY[id] ?? 'sorting');
     this.steps.set([]);
     this.currentStep.set(0);
   }
 
   getCategoryForAlgo(id: AlgorithmId): AlgorithmCategory {
-    const catMap: Record<string, AlgorithmCategory> = {
-      'quick-sort': 'sorting', 'merge-sort': 'sorting', 'bubble-sort': 'sorting',
-      'heap-sort': 'sorting', 'insertion-sort': 'sorting',
-      'binary-search': 'search',
-      'dijkstra': 'graph', 'bfs': 'graph', 'dfs': 'graph',
-      'prim': 'graph', 'kruskal': 'graph', 'astar': 'graph',
-      'knapsack': 'dp',
-      'n-queens': 'backtracking',
-    };
-    return catMap[id] ?? 'sorting';
+    return ALGORITHM_CATEGORY[id] ?? 'sorting';
   }
 
   runAlgorithm(): void {
@@ -240,27 +312,29 @@ export class AlgorithmStore {
     this.error.set(null);
 
     const algo = this.selectedAlgo();
-    const cat  = this.category();
-
-    const handleResponse = (steps: AnyStep[]) => {
-      this.steps.set(steps);
-      this.currentStep.set(0);
-      this.isLoading.set(false);
-    };
-    const handleError = (err: unknown) => {
-      this.error.set('请求失败，请确认后端服务已启动（http://localhost:8080）');
-      this.isLoading.set(false);
-      console.error(err);
-    };
+    const cat = this.category();
 
     if (cat === 'vr-3d') {
-      this.steps.set([{ type: 'vr-3d' } as any]);
+      this.steps.set([{ type: 'vr-3d' } as unknown as AnyStep]);
       this.currentStep.set(0);
       this.isLoading.set(false);
       return;
     }
 
-    this.dispatchRun(algo, cat, handleResponse, handleError);
+    this.dispatchRun(
+      algo,
+      cat,
+      steps => {
+        this.steps.set(steps);
+        this.currentStep.set(0);
+        this.isLoading.set(false);
+      },
+      err => {
+        this.error.set('请求失败，请确认后端服务已启动（http://localhost:8080）');
+        this.isLoading.set(false);
+        console.error(err);
+      }
+    );
   }
 
   runCompareAlgorithm(): void {
@@ -269,51 +343,22 @@ export class AlgorithmStore {
     this.compareError.set(null);
 
     const algo = this.compareAlgo();
-    const cat  = this.getCategoryForAlgo(algo);
+    const cat = this.getCategoryForAlgo(algo);
 
-    const handleResponse = (steps: AnyStep[]) => {
-      this.compareSteps.set(steps);
-      this.compareCurrentStep.set(0);
-      this.compareIsLoading.set(false);
-    };
-    const handleError = (err: unknown) => {
-      this.compareError.set('对比算法请求失败');
-      this.compareIsLoading.set(false);
-      console.error(err);
-    };
-
-    this.dispatchRun(algo, cat, handleResponse, handleError);
-  }
-
-  private dispatchRun(
-    algo: AlgorithmId, cat: AlgorithmCategory,
-    onSuccess: (steps: AnyStep[]) => void, onError: (err: unknown) => void
-  ): void {
-    if (cat === 'sorting') {
-      this.svc.runSort(algo, this.sortArray()).subscribe({
-        next: r => onSuccess(r.steps), error: onError,
-      });
-    } else if (cat === 'search') {
-      this.svc.runSearch(algo, this.searchArray(), this.searchTarget()).subscribe({
-        next: r => onSuccess(r.steps), error: onError,
-      });
-    } else if (cat === 'graph') {
-      this.svc.runGraph(algo, this.graphData(), this.graphStart(), this.graphEnd()).subscribe({
-        next: r => onSuccess(r.steps), error: onError,
-      });
-    } else if (cat === 'dp') {
-      this.svc.runDP(algo, this.knapsackItems(), this.knapsackCap()).subscribe({
-        next: r => onSuccess(r.steps), error: onError,
-      });
-    } else if (cat === 'backtracking') {
-      this.svc.runBacktracking(algo, this.queensN()).subscribe({
-        next: r => onSuccess(r.steps), error: onError,
-      });
-    } else if (cat === 'divide-conquer') {
-      this.svc.runDivideConquer(algo, this.divideX(), this.divideY()).subscribe({
-        next: r => onSuccess(r.steps), error: onError,
-      });
-    }
+    this.dispatchRun(
+      algo,
+      cat,
+      steps => {
+        this.compareSteps.set(steps);
+        this.compareCurrentStep.set(0);
+        this.compareIsLoading.set(false);
+      },
+      err => {
+        this.compareError.set('对比算法请求失败');
+        this.compareIsLoading.set(false);
+        console.error(err);
+      }
+    );
   }
 
   runBothAlgorithms(): void {
@@ -324,11 +369,11 @@ export class AlgorithmStore {
   }
 
   stepForward(): void {
-    if (this.canForward()) this.currentStep.update(s => s + 1);
+    if (this.canForward()) this.currentStep.update(step => step + 1);
   }
 
   stepBackward(): void {
-    if (this.canBackward()) this.currentStep.update(s => s - 1);
+    if (this.canBackward()) this.currentStep.update(step => step - 1);
   }
 
   setCurrentStep(n: number): void {
@@ -337,13 +382,13 @@ export class AlgorithmStore {
 
   compareStepForward(): void {
     if (this.compareCurrentStep() < this.compareSteps().length - 1) {
-      this.compareCurrentStep.update(s => s + 1);
+      this.compareCurrentStep.update(step => step + 1);
     }
   }
 
   compareStepBackward(): void {
     if (this.compareCurrentStep() > 0) {
-      this.compareCurrentStep.update(s => s - 1);
+      this.compareCurrentStep.update(step => step - 1);
     }
   }
 
@@ -361,7 +406,10 @@ export class AlgorithmStore {
 
   stopPlay(): void {
     this.isPlaying.set(false);
-    if (this.playTimer) { clearInterval(this.playTimer); this.playTimer = null; }
+    if (this.playTimer) {
+      clearInterval(this.playTimer);
+      this.playTimer = null;
+    }
   }
 
   startComparePlay(): void {
@@ -378,7 +426,10 @@ export class AlgorithmStore {
 
   stopComparePlay(): void {
     this.compareIsPlaying.set(false);
-    if (this.comparePlayTimer) { clearInterval(this.comparePlayTimer); this.comparePlayTimer = null; }
+    if (this.comparePlayTimer) {
+      clearInterval(this.comparePlayTimer);
+      this.comparePlayTimer = null;
+    }
   }
 
   togglePlay(): void {
@@ -393,35 +444,61 @@ export class AlgorithmStore {
 
   setSpeed(s: number): void {
     this.speed.set(s);
-    if (this.isPlaying()) { this.stopPlay(); this.startPlay(); }
-    if (this.compareIsPlaying()) { this.stopComparePlay(); this.startComparePlay(); }
+    if (this.isPlaying()) {
+      this.stopPlay();
+      this.startPlay();
+    }
+    if (this.compareIsPlaying()) {
+      this.stopComparePlay();
+      this.startComparePlay();
+    }
   }
 
-  setSortArray(arr: number[]): void { this.sortArray.set(arr); }
-  setSearchData(arr: number[], target: number): void {
-    this.searchArray.set(arr); this.searchTarget.set(target);
+  setSortArray(arr: number[]): void {
+    this.sortArray.set(arr);
   }
+
+  setSearchData(arr: number[], target: number): void {
+    this.searchArray.set(arr);
+    this.searchTarget.set(target);
+  }
+
   setGraphData(d: GraphData): void {
     this.graphData.set(d);
     this.reset();
   }
-  setGraphStart(id: string): void { this.graphStart.set(id); }
-  setGraphEnd(id: string): void { this.graphEnd.set(id); }
-  setKnapsackItems(items: KnapsackItem[], cap: number): void {
-    this.knapsackItems.set(items); this.knapsackCap.set(cap);
+
+  setGraphStart(id: string): void {
+    this.graphStart.set(id);
   }
-  setQueensN(n: number): void { this.queensN.set(n); }
+
+  setGraphEnd(id: string): void {
+    this.graphEnd.set(id);
+  }
+
+  setKnapsackItems(items: KnapsackItem[], cap: number): void {
+    this.knapsackItems.set(items);
+    this.knapsackCap.set(cap);
+  }
+
+  setQueensN(n: number): void {
+    this.queensN.set(n);
+  }
+
   setDivideNumbers(x: string, y: string): void {
     this.divideX.set(x);
     this.divideY.set(y);
   }
+
   setVr3dStructure(type: StructureType): void {
     this.vr3dStructure.set(type);
     this.vr3dData.set({ values: this.defaultVr3dValues(type) });
   }
+
   setVr3dData(values: string[]): void {
     this.vr3dData.set({ values });
   }
+
   randomVr3dData(): void {
     const type = this.vr3dStructure();
 
@@ -452,27 +529,15 @@ export class AlgorithmStore {
     this.vr3dData.set({ values });
   }
 
-  private defaultVr3dValues(type: StructureType): string[] {
-    switch (type) {
-      case 'array':
-      case 'stack':
-      case 'queue':
-        return ['10', '20', '30', '40', '50'];
-      case 'linked-list':
-        return ['A', 'B', 'C', 'D'];
-      case 'binary-tree':
-        return ['8', '4', '12', '2', '6', '10', '14'];
-      case 'b-plus-tree':
-        return ['10', '20', '30', '40', '50', '60', '70', '80'];
-    }
+  setActivePanel(p: 'visualizer' | 'history' | 'assessment'): void {
+    this.activePanel.set(p);
   }
-  setActivePanel(p: 'visualizer' | 'history' | 'assessment'): void { this.activePanel.set(p); }
 
   toggleCompareMode(): void {
-    this.compareMode.update(v => !v);
+    this.compareMode.update(value => !value);
+
     if (this.compareMode()) {
       const current = this.selectedAlgo();
-      const cat = this.category();
       const siblings: Record<string, AlgorithmId[]> = {
         sorting: ['quick-sort', 'merge-sort', 'bubble-sort', 'heap-sort', 'insertion-sort'],
         graph: ['dijkstra', 'bfs', 'dfs', 'prim', 'kruskal', 'astar'],
@@ -480,8 +545,8 @@ export class AlgorithmStore {
         dp: ['knapsack'],
         backtracking: ['n-queens'],
       };
-      const list = siblings[cat] ?? [];
-      const other = list.find(a => a !== current);
+      const list = siblings[this.category()] ?? [];
+      const other = list.find(algo => algo !== current);
       if (other) this.compareAlgo.set(other);
       this.compareSteps.set([]);
       this.compareCurrentStep.set(0);
@@ -509,5 +574,50 @@ export class AlgorithmStore {
     this.compareSteps.set([]);
     this.compareCurrentStep.set(0);
     this.compareError.set(null);
+  }
+
+  private dispatchRun(
+    algo: AlgorithmId,
+    cat: AlgorithmCategory,
+    onSuccess: (steps: AnyStep[]) => void,
+    onError: (err: unknown) => void
+  ): void {
+    if (cat === 'sorting') {
+      this.svc.runSort(algo, this.sortArray()).subscribe({ next: r => onSuccess(r.steps), error: onError });
+    } else if (cat === 'search') {
+      this.svc.runSearch(algo, this.searchArray(), this.searchTarget()).subscribe({ next: r => onSuccess(r.steps), error: onError });
+    } else if (cat === 'graph') {
+      this.svc.runGraph(algo, this.graphData(), this.graphStart(), this.graphEnd()).subscribe({ next: r => onSuccess(r.steps), error: onError });
+    } else if (cat === 'dp') {
+      this.svc.runDP(algo, this.knapsackItems(), this.knapsackCap()).subscribe({ next: r => onSuccess(r.steps), error: onError });
+    } else if (cat === 'backtracking') {
+      this.svc.runBacktracking(algo, this.queensN()).subscribe({ next: r => onSuccess(r.steps), error: onError });
+    } else if (cat === 'divide-conquer') {
+      this.svc.runDivideConquer(algo, this.divideX(), this.divideY()).subscribe({ next: r => onSuccess(r.steps), error: onError });
+    }
+  }
+
+  private terminalPhase(): string {
+    const sequence = this.phaseConfig().sequence;
+    return sequence[sequence.length - 1] ?? '';
+  }
+
+  private isAtLastStep(): boolean {
+    return this.steps().length > 0 && this.currentStep() >= this.steps().length - 1;
+  }
+
+  private defaultVr3dValues(type: StructureType): string[] {
+    switch (type) {
+      case 'array':
+      case 'stack':
+      case 'queue':
+        return ['10', '20', '30', '40', '50'];
+      case 'linked-list':
+        return ['A', 'B', 'C', 'D'];
+      case 'binary-tree':
+        return ['8', '4', '12', '2', '6', '10', '14'];
+      case 'b-plus-tree':
+        return ['10', '20', '30', '40', '50', '60', '70', '80'];
+    }
   }
 }

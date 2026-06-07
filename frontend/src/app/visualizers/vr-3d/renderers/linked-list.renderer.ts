@@ -11,6 +11,12 @@ export class LinkedListRenderer {
             const x = (i - center) * 3;
 
             const node = ThreeObjectFactory.createSphere(String(value), 0x38bdf8);
+            node.userData = {
+                structureType: 'linked-list',
+                value: String(value),
+                index: i,
+                originalColor: 0x38bdf8,
+            };
             node.position.set(x, 1.5, 0);
             ctx.addObject(node);
 

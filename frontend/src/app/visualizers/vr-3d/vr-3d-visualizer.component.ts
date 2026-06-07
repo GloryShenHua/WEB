@@ -1,15 +1,17 @@
 import {
-    Component,
-    ElementRef,
-    ViewChild,
-    AfterViewInit,
-    OnDestroy,
-    computed,
-    effect
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  computed,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { AlgorithmStore } from '../../store/algorithm.store';
 import { StructureType } from './renderers/structure-renderer.types';
 import { STRUCTURE_INFO } from './data/structure-info';
 import { ArrayRenderer } from './renderers/array.renderer';
@@ -18,261 +20,359 @@ import { QueueRenderer } from './renderers/queue.renderer';
 import { LinkedListRenderer } from './renderers/linked-list.renderer';
 import { BinaryTreeRenderer } from './renderers/binary-tree.renderer';
 import { BPlusTreeRenderer } from './renderers/b-plus-tree.renderer';
-import { AlgorithmStore } from '../../store/algorithm.store';
+import { AnimationContext, StructureAnimator } from './animators/structure-animator.interface';
+import { BasicStructureAnimator } from './animators/basic-structure.animator';
 import { BPlusTreeAnimator } from './animators/b-plus-tree.animator';
-import { StructureAnimator, AnimationContext } from './animators/structure-animator.interface';
+
+interface StructureOption {
+  type: StructureType;
+  label: string;
+}
 
 @Component({
-    selector: 'app-vr-3d-visualizer',
-    standalone: true,
-    imports: [CommonModule],
-    templateUrl: './vr-3d-visualizer.component.html',
+  selector: 'app-vr-3d-visualizer',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './vr-3d-visualizer.component.html',
 })
 export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
-    @ViewChild('canvasContainer', { static: true })
-    canvasContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('canvasContainer', { static: true })
+  canvasContainer!: ElementRef<HTMLDivElement>;
 
-    selected = computed(() => this.store.vr3dStructure());
+  readonly structureOptions: StructureOption[] = [
+    { type: 'array', label: '数组' },
+    { type: 'stack', label: '栈' },
+    { type: 'queue', label: '队列' },
+    { type: 'linked-list', label: '链表' },
+    { type: 'binary-tree', label: '二叉树' },
+    { type: 'b-plus-tree', label: 'B+ 树' },
+  ];
 
-    private scene!: THREE.Scene;
-    private camera!: THREE.PerspectiveCamera;
-    private renderer!: THREE.WebGLRenderer;
-    private controls!: OrbitControls;
-    private animationId: number | null = null;
-    private objects: THREE.Object3D[] = [];
-    private threeReady = false;
-    private currentAnimator: StructureAnimator | null = null;
-    private isAnimating = false;
-    private tempObjects: THREE.Object3D[] = [];
+  selected = computed(() => this.store.vr3dStructure());
+  operationStatus = '选择一个结构操作，系统会在 3D 场景中高亮关键步骤。';
+  practiceAnswer = '';
+  practiceFeedback: { ok: boolean; text: string } | null = null;
 
-    constructor(public store: AlgorithmStore) {
-        effect(() => {
-            this.store.vr3dStructure();
-            this.store.vr3dData();
+  private scene!: THREE.Scene;
+  private camera!: THREE.PerspectiveCamera;
+  private renderer!: THREE.WebGLRenderer;
+  private controls!: OrbitControls;
+  private animationId: number | null = null;
+  private resizeObserver: ResizeObserver | null = null;
+  private objects: THREE.Object3D[] = [];
+  private tempObjects: THREE.Object3D[] = [];
+  private threeReady = false;
+  private isAnimating = false;
+  private animatorsMap = new Map<StructureType, StructureAnimator>();
 
-            if (this.threeReady) {
-                this.renderStructure();
-            }
-        });
-    }
+  constructor(public store: AlgorithmStore) {
+    effect(() => {
+      this.store.vr3dStructure();
+      this.store.vr3dData();
 
-    get currentInfo() {
-        return STRUCTURE_INFO[this.selected()];
-    }
-
-    ngAfterViewInit(): void {
-        this.initThree();
-        this.threeReady = true;
+      if (this.threeReady) {
         this.renderStructure();
-        this.animate();
-        this.initAnimators();
-        window.addEventListener('resize', this.handleResize);
+        this.resetPractice();
+      }
+    });
+  }
+
+  get currentInfo() {
+    return STRUCTURE_INFO[this.selected()];
+  }
+
+  get practicePrompt(): string {
+    switch (this.selected()) {
+      case 'stack':
+        return '练习：当前栈顶元素是什么？';
+      case 'queue':
+        return '练习：当前队头元素是什么？';
+      case 'array':
+        return '练习：数组下标 0 的元素是什么？';
+      case 'linked-list':
+        return '练习：链表头节点是什么？';
+      case 'binary-tree':
+        return '练习：当前根节点是什么？';
+      case 'b-plus-tree':
+        return '练习：最左侧叶子节点的第一个关键字是什么？';
+    }
+  }
+
+  ngAfterViewInit(): void {
+    this.initThree();
+    this.initAnimators();
+    this.threeReady = true;
+    this.renderStructure();
+    this.observeCanvasSize();
+    this.animate();
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  ngOnDestroy(): void {
+    if (this.animationId !== null) {
+      cancelAnimationFrame(this.animationId);
     }
 
-    ngOnDestroy(): void {
-        if (this.animationId !== null) {
-            cancelAnimationFrame(this.animationId);
-        }
+    this.resizeObserver?.disconnect();
+    window.removeEventListener('resize', this.handleResize);
+    this.controls?.dispose();
+    this.renderer?.dispose();
+    this.clearObjects();
+    this.clearTemporaryObjects();
+  }
 
-        window.removeEventListener('resize', this.handleResize);
+  selectStructure(type: StructureType): void {
+    this.store.setVr3dStructure(type);
+    this.operationStatus = '已切换结构，可以运行操作动画或完成右侧练习。';
+  }
 
-        this.controls?.dispose();
-        this.renderer?.dispose();
+  performOperation(opName: string): void {
+    this.onOperate(opName).then();
+  }
 
-        for (const obj of this.objects) {
-            this.disposeObject(obj);
-        }
+  async onOperate(operationName: string): Promise<void> {
+    if (this.isAnimating) {
+      alert('动画正在进行中，请稍后再试');
+      return;
     }
 
-    selectStructure(type: StructureType): void {
-        this.store.setVr3dStructure(type);
+    const animator = this.animatorsMap.get(this.selected());
+    if (!animator) {
+      alert(`${this.currentInfo.title} 的操作动画尚未实现`);
+      return;
     }
 
-    private initThree(): void {
-        const container = this.canvasContainer.nativeElement;
+    this.isAnimating = true;
+    this.operationStatus = `正在演示：${operationName}`;
+    this.controls.enabled = false;
 
-        this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x020617);
+    try {
+      const ctx: AnimationContext = {
+        scene: this.scene,
+        camera: this.camera,
+        controls: this.controls,
+        structureType: this.selected(),
+        addTemporaryObject: obj => {
+          this.tempObjects.push(obj);
+          this.scene.add(obj);
+        },
+        clearTemporaryObjects: () => this.clearTemporaryObjects(),
+        data: this.store.vr3dData(),
+        updateData: newData => {
+          this.store.setVr3dData(newData.values);
+          setTimeout(() => this.renderStructure(), 100);
+        },
+        announce: message => {
+          this.operationStatus = message;
+        },
+      };
 
-        this.camera = new THREE.PerspectiveCamera(
-            60,
-            container.clientWidth / container.clientHeight,
-            0.1,
-            1000
-        );
+      await animator.performOperation(operationName, ctx);
+    } catch (err) {
+      console.error(err);
+      this.operationStatus = '操作演示失败，请查看控制台错误。';
+    } finally {
+      this.isAnimating = false;
+      this.controls.enabled = true;
+      this.clearTemporaryObjects();
+    }
+  }
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setSize(container.clientWidth, container.clientHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(this.renderer.domElement);
+  randomData(): void {
+    this.store.randomVr3dData();
+    this.operationStatus = '已生成一组新的练习数据。';
+  }
 
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.resetCameraView();
+  checkPractice(): void {
+    const answer = this.practiceAnswer.trim();
+    const expected = this.getPracticeExpectedAnswer();
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-        this.scene.add(ambient);
-
-        const directional = new THREE.DirectionalLight(0xffffff, 1);
-        directional.position.set(8, 10, 8);
-        this.scene.add(directional);
+    if (!answer) {
+      this.practiceFeedback = { ok: false, text: '请先填写答案。' };
+      return;
     }
 
-    private renderStructure(): void {
-        this.clearObjects();
+    const ok = answer === expected;
+    this.practiceFeedback = {
+      ok,
+      text: ok ? '回答正确，关键位置判断准确。' : `还差一点，正确答案是 ${expected}。`,
+    };
+  }
 
-        const ctx = {
-            addObject: (obj: THREE.Object3D) => this.addObject(obj),
-            data: this.store.vr3dData(),
-        };
+  resetPractice(): void {
+    this.practiceAnswer = '';
+    this.practiceFeedback = null;
+  }
 
-        switch (this.selected()) {
-            case 'array':
-                ArrayRenderer.render(ctx);
-                break;
-            case 'stack':
-                StackRenderer.render(ctx);
-                break;
-            case 'queue':
-                QueueRenderer.render(ctx);
-                break;
-            case 'linked-list':
-                LinkedListRenderer.render(ctx);
-                break;
-            case 'binary-tree':
-                BinaryTreeRenderer.render(ctx);
-                break;
-            case 'b-plus-tree':
-                BPlusTreeRenderer.render(ctx);
-                break;
-        }
+  resetView(): void {
+    this.resetCameraView();
+    this.operationStatus = '视角已重置。';
+  }
 
-        this.resetCameraView();
-    }
+  private initThree(): void {
+    const container = this.canvasContainer.nativeElement;
 
-    private resetCameraView(): void {
-        if (this.selected() === 'b-plus-tree') {
-            this.camera.position.set(0, 5.5, 24);
-            this.controls.target.set(0, 1.2, 0);
-        } else if (this.selected() === 'binary-tree') {
-            this.camera.position.set(0, 5.5, 20);
-            this.controls.target.set(0, 1.4, 0);
-        } else {
-            this.camera.position.set(0, 4.5, 14);
-            this.controls.target.set(0, 2.4, 0);
-        }
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x020617);
 
-        this.controls.update();
-    }
+    this.camera = new THREE.PerspectiveCamera(58, 1, 0.1, 1000);
 
-    private addObject(obj: THREE.Object3D): void {
-        this.objects.push(obj);
-        this.scene.add(obj);
-    }
+    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.domElement.style.display = 'block';
+    this.renderer.domElement.style.width = '100%';
+    this.renderer.domElement.style.height = '100%';
+    container.appendChild(this.renderer.domElement);
 
-    private clearObjects(): void {
-        for (const obj of this.objects) {
-            this.scene.remove(obj);
-            this.disposeObject(obj);
-        }
-        this.objects = [];
-    }
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
 
-    private disposeObject(obj: THREE.Object3D): void {
-        obj.traverse(child => {
-            const mesh = child as THREE.Mesh;
-            if (mesh.geometry) {
-                mesh.geometry.dispose();
-            }
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
 
-            const material = mesh.material as THREE.Material | THREE.Material[] | undefined;
-            if (Array.isArray(material)) {
-                material.forEach(m => m.dispose());
-            } else if (material) {
-                material.dispose();
-            }
+    const directional = new THREE.DirectionalLight(0xffffff, 1);
+    directional.position.set(8, 10, 8);
+    this.scene.add(directional);
 
-            if (child instanceof THREE.Sprite) {
-                const material = child.material as THREE.SpriteMaterial;
-                if (material.map) material.map.dispose();
-                material.dispose();
-            }
-        });
-    }
+    const grid = new THREE.GridHelper(24, 24, 0x334155, 0x1e293b);
+    grid.position.y = -0.05;
+    this.scene.add(grid);
 
-    private animate = (): void => {
-        this.animationId = requestAnimationFrame(this.animate);
-        this.controls.update();
-        this.renderer.render(this.scene, this.camera);
+    this.resizeRendererToContainer();
+  }
+
+  private initAnimators(): void {
+    const basicAnimator = new BasicStructureAnimator();
+    this.animatorsMap.set('array', basicAnimator);
+    this.animatorsMap.set('stack', basicAnimator);
+    this.animatorsMap.set('queue', basicAnimator);
+    this.animatorsMap.set('linked-list', basicAnimator);
+    this.animatorsMap.set('binary-tree', basicAnimator);
+    this.animatorsMap.set('b-plus-tree', new BPlusTreeAnimator());
+  }
+
+  private renderStructure(): void {
+    this.clearObjects();
+
+    const ctx = {
+      addObject: (obj: THREE.Object3D) => this.addObject(obj),
+      data: this.store.vr3dData(),
     };
 
-    private handleResize = (): void => {
-        const container = this.canvasContainer.nativeElement;
-        this.camera.aspect = container.clientWidth / container.clientHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(container.clientWidth, container.clientHeight);
-    };
-
-    private animatorsMap = new Map<StructureType, StructureAnimator>();
-
-    private initAnimators(): void {
-        // 注册数据结构对应的动画器
-        this.animatorsMap.set('b-plus-tree', new BPlusTreeAnimator());
-        // 后续可添加 array, stack 等的动画器
+    switch (this.selected()) {
+      case 'array':
+        ArrayRenderer.render(ctx);
+        break;
+      case 'stack':
+        StackRenderer.render(ctx);
+        break;
+      case 'queue':
+        QueueRenderer.render(ctx);
+        break;
+      case 'linked-list':
+        LinkedListRenderer.render(ctx);
+        break;
+      case 'binary-tree':
+        BinaryTreeRenderer.render(ctx);
+        break;
+      case 'b-plus-tree':
+        BPlusTreeRenderer.render(ctx);
+        break;
     }
 
-    async onOperate(operationName: string): Promise<void> {
-        if (this.isAnimating) {
-            alert('动画进行中，请稍后再试');
-            return;
-        }
-        const animator = this.animatorsMap.get(this.selected());
-        if (!animator) {
-            alert(`${this.selected()} 的操作动画尚未实现`);
-            return;
-        }
+    this.resetCameraView();
+    this.resizeRendererToContainer();
+  }
 
-        this.isAnimating = true;
-        // 临时禁用轨道控制
-        this.controls.enabled = false;
+  private resetCameraView(): void {
+    if (!this.camera || !this.controls) return;
 
-        try {
-            const ctx: AnimationContext = {
-                scene: this.scene,
-                camera: this.camera,
-                controls: this.controls,
-                addTemporaryObject: (obj) => {
-                    this.tempObjects.push(obj);
-                    this.scene.add(obj);
-                },
-                clearTemporaryObjects: () => {
-                    this.tempObjects.forEach(obj => this.scene.remove(obj));
-                    this.tempObjects = [];
-                },
-                data: this.store.vr3dData(),
-                updateData: (newData) => {
-                    this.store.setVr3dData(newData.values);
-                    // 等待下一个渲染周期重新绘制结构
-                    setTimeout(() => this.renderStructure(), 100);
-                }
-            };
-            await animator.performOperation(operationName, ctx);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            this.isAnimating = false;
-            this.controls.enabled = true;
-            this.clearTemporaryObjects();
-        }
+    if (this.selected() === 'b-plus-tree') {
+      this.camera.position.set(0, 4.2, 22);
+      this.controls.target.set(0, 1.1, 0);
+    } else if (this.selected() === 'binary-tree') {
+      this.camera.position.set(0, 4.3, 18);
+      this.controls.target.set(0, 1.8, 0);
+    } else if (this.selected() === 'stack') {
+      this.camera.position.set(0, 3.8, 12);
+      this.controls.target.set(0, 1.8, 0);
+    } else {
+      this.camera.position.set(0, 3.2, 12);
+      this.controls.target.set(0, 1.0, 0);
     }
 
-    private clearTemporaryObjects(): void {
-        this.tempObjects.forEach(obj => this.scene.remove(obj));
-        this.tempObjects = [];
-    }
+    this.controls.update();
+  }
 
-    // 添加公共方法供模板调用
-    performOperation(opName: string): void {
-        this.onOperate(opName).then(r => {});
+  private observeCanvasSize(): void {
+    this.resizeObserver = new ResizeObserver(() => this.resizeRendererToContainer());
+    this.resizeObserver.observe(this.canvasContainer.nativeElement);
+  }
+
+  private resizeRendererToContainer(): void {
+    if (!this.renderer || !this.camera) return;
+
+    const container = this.canvasContainer.nativeElement;
+    const width = Math.max(container.clientWidth, 1);
+    const height = Math.max(container.clientHeight, 1);
+
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height, false);
+  }
+
+  private addObject(obj: THREE.Object3D): void {
+    this.objects.push(obj);
+    this.scene.add(obj);
+  }
+
+  private clearObjects(): void {
+    for (const obj of this.objects) {
+      this.scene.remove(obj);
+      this.disposeObject(obj);
     }
+    this.objects = [];
+  }
+
+  private clearTemporaryObjects(): void {
+    for (const obj of this.tempObjects) {
+      this.scene.remove(obj);
+      this.disposeObject(obj);
+    }
+    this.tempObjects = [];
+  }
+
+  private disposeObject(obj: THREE.Object3D): void {
+    obj.traverse(child => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.dispose();
+
+      const material = mesh.material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(material)) {
+        material.forEach(item => item.dispose());
+      } else if (material) {
+        material.dispose();
+      }
+
+      if (child instanceof THREE.Sprite) {
+        const material = child.material as THREE.SpriteMaterial;
+        material.map?.dispose();
+        material.dispose();
+      }
+    });
+  }
+
+  private animate = (): void => {
+    this.animationId = requestAnimationFrame(this.animate);
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  private handleResize = (): void => {
+    this.resizeRendererToContainer();
+  };
+
+  private getPracticeExpectedAnswer(): string {
+    const values = this.store.vr3dData().values;
+    return this.selected() === 'stack' ? values.at(-1) ?? '' : values[0] ?? '';
+  }
 }
