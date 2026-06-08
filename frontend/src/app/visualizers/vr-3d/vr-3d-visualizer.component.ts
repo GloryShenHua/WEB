@@ -41,7 +41,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     private animationId: number | null = null;
     private objects: THREE.Object3D[] = [];
     private threeReady = false;
-    private currentAnimator: StructureAnimator | null = null;
+    //private currentAnimator: StructureAnimator | null = null;
     private isAnimating = false;
     private tempObjects: THREE.Object3D[] = [];
 
@@ -233,8 +233,8 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         }
 
         this.isAnimating = true;
-        // 临时禁用轨道控制
-        this.controls.enabled = false;
+        // 不再禁用轨道控制，允许用户在动画时拖拽/缩放
+        // this.controls.enabled = false;
 
         try {
             const ctx: AnimationContext = {
@@ -254,14 +254,15 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
                     this.store.setVr3dData(newData.values);
                     // 等待下一个渲染周期重新绘制结构
                     setTimeout(() => this.renderStructure(), 100);
-                }
+                },
             };
             await animator.performOperation(operationName, ctx);
         } catch (err) {
             console.error(err);
         } finally {
             this.isAnimating = false;
-            this.controls.enabled = true;
+            // 不再在结束时恢复（因为未禁用）
+            // this.controls.enabled = true;
             this.clearTemporaryObjects();
         }
     }

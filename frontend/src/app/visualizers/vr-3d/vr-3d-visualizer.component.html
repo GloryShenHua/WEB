@@ -38,15 +38,6 @@
             <section class="mb-4">
                 <h3 class="text-sm font-semibold text-yellow-300 mb-1">核心操作与复杂度</h3>
                 <div class="space-y-2">
-                    <!-- 原有显示UI，纯文本，无动画UI
-                    <div *ngFor="let op of currentInfo.operations" class="bg-slate-800 rounded p-2">
-                        <div class="flex justify-between text-sm">
-                            <span class="font-semibold">{{ op.name }}</span>
-                            <span class="font-mono text-purple-300">{{ op.complexity }}</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">{{ op.description }}</p>
-                    </div>
-                    -->
                     <div *ngFor="let op of currentInfo.operations" class="bg-slate-800 rounded p-2">
                         <div class="flex justify-between items-center text-sm">
                             <span class="font-semibold">{{ op.name }}</span>

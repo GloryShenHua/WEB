@@ -1,6 +1,6 @@
 import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+//import { RouterOutlet } from '@angular/router';
 import { AlgorithmStore } from './store/algorithm.store';
 import { AuthStore } from './store/auth.store';
 import { AuthComponent } from './components/auth/auth.component';
@@ -25,7 +25,7 @@ import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/a
   standalone: true,
   imports: [
     CommonModule,
-    RouterOutlet,
+    //RouterOutlet,
     AuthComponent,
     SidebarComponent,
     ControlPanelComponent,

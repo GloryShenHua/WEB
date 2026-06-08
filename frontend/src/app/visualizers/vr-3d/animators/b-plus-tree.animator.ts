@@ -34,7 +34,7 @@ export class BPlusTreeAnimator implements StructureAnimator {
                 }
                 break;
             }
-            case '范围查询': {
+            case '范围查找': {
                 const start = prompt('起始值', '20');
                 const end = prompt('结束值', '60');
                 if (start?.trim() && end?.trim()) {
@@ -132,6 +132,7 @@ export class BPlusTreeAnimator implements StructureAnimator {
         ctx.updateData({ values: newValues });
 
         await this.showFloatingLabel(ctx, `插入完成：${value} 已加入 B+ 树`, 0x22c55e);
+        alert(`${value}已插入`);
         await this.delay(700);
     }
 
@@ -182,6 +183,7 @@ export class BPlusTreeAnimator implements StructureAnimator {
         ctx.updateData({ values: this.sortValues(newValues) });
 
         await this.showFloatingLabel(ctx, `删除完成：${value} 已移除`, 0xef4444);
+        alert(`已删除${value}`);
         await this.delay(700);
     }
 
