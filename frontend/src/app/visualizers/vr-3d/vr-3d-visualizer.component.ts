@@ -250,7 +250,8 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
                     this.store.setVr3dData(newData.values);
                     // 等待下一个渲染周期重新绘制结构
                     setTimeout(() => this.renderStructure(), 100);
-                }
+                },
+                structureType: this.selected(),
             };
             await animator.performOperation(operationName, ctx);
         } catch (err) {
