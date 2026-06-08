@@ -205,6 +205,8 @@ export class BasicStructureAnimator implements StructureAnimator {
 
     const path = this.binarySearchPath(values, target);
     for (const index of path) {
+      if (!values[index]) continue;
+
       await this.highlightByIndex(ctx, index, values[index] === target ? 0x22c55e : 0xfacc15, `比较节点 ${values[index]}`);
       if (values[index] === target && operationName === '查找') {
         ctx.announce?.(`找到节点 ${target}`);
@@ -213,8 +215,17 @@ export class BasicStructureAnimator implements StructureAnimator {
     }
 
     if (operationName === '插入') {
+      const insertIndex = this.binaryInsertIndex(values, target);
+      if (insertIndex === null) {
+        ctx.announce?.(`节点 ${target} 已存在，无需重复插入`);
+        return;
+      }
+
       ctx.announce?.(`按搜索树规则插入 ${target}`);
-      values.push(target);
+      while (values.length <= insertIndex) {
+        values.push('');
+      }
+      values[insertIndex] = target;
       ctx.updateData({ values });
     } else {
       ctx.announce?.(`未找到节点 ${target}`);
@@ -273,6 +284,7 @@ export class BasicStructureAnimator implements StructureAnimator {
     const order: number[] = [];
     const visit = (index: number): void => {
       if (index >= values.length) return;
+      if (!values[index]) return;
 
       const left = index * 2 + 1;
       const right = index * 2 + 2;
@@ -292,7 +304,7 @@ export class BasicStructureAnimator implements StructureAnimator {
     const path: number[] = [];
     let index = 0;
 
-    while (index < values.length) {
+    while (index < values.length && values[index]) {
       path.push(index);
       const cmp = this.compare(target, values[index]);
       if (cmp === 0) break;
@@ -300,6 +312,23 @@ export class BasicStructureAnimator implements StructureAnimator {
     }
 
     return path;
+  }
+
+  private binaryInsertIndex(values: string[], target: string): number | null {
+    let index = 0;
+
+    while (index < 63) {
+      const current = values[index];
+      if (!current) return index;
+
+      const cmp = this.compare(target, current);
+      if (cmp === 0) return null;
+
+      index = cmp < 0 ? index * 2 + 1 : index * 2 + 2;
+    }
+
+    alert('当前演示最多显示 63 个节点，无法继续插入。');
+    return null;
   }
 
   private async pulseFromIndex(ctx: AnimationContext, startIndex: number, color: number): Promise<void> {

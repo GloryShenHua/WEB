@@ -510,9 +510,9 @@ export class AlgorithmStore {
     }
 
     if (type === 'binary-tree') {
-      const sizes = [7, 15, 31];
-      const n = sizes[Math.floor(Math.random() * sizes.length)];
-      const values = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
+      const n = 7 + Math.floor(Math.random() * 6);
+      const source = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
+      const values = this.toBinarySearchTreeValues([...new Set(source)]);
       this.vr3dData.set({ values });
       return;
     }
@@ -527,6 +527,31 @@ export class AlgorithmStore {
     const n = 4 + Math.floor(Math.random() * 5);
     const values = Array.from({ length: n }, () => String(Math.floor(Math.random() * 90) + 10));
     this.vr3dData.set({ values });
+  }
+
+  private toBinarySearchTreeValues(source: string[]): string[] {
+    const values: string[] = [];
+
+    for (const value of source) {
+      let index = 0;
+
+      while (index < 63) {
+        if (!values[index]) {
+          values[index] = value;
+          break;
+        }
+
+        const current = Number(values[index]);
+        const next = Number(value);
+        index = next < current ? index * 2 + 1 : index * 2 + 2;
+      }
+    }
+
+    while (values.length > 0 && !values[values.length - 1]) {
+      values.pop();
+    }
+
+    return values.map(value => value ?? '');
   }
 
   setActivePanel(p: 'visualizer' | 'history' | 'assessment'): void {

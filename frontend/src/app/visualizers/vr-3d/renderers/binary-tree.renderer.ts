@@ -31,7 +31,7 @@ export class BinaryTreeRenderer {
                 z,
                 index,
             };
-        });
+        }).filter(node => node.v !== '');
 
         nodes.forEach(node => {
             if (node.index === 0) {
@@ -39,7 +39,7 @@ export class BinaryTreeRenderer {
             }
 
             const parentIndex = Math.floor((node.index - 1) / 2);
-            const parent = nodes[parentIndex];
+            const parent = nodes.find(item => item.index === parentIndex);
 
             if (!parent) {
                 return;

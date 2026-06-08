@@ -4,6 +4,15 @@
   <header class="flex items-center justify-between px-5 py-3 bg-slate-900 border-b border-slate-700 flex-shrink-0 z-20">
     <div class="flex items-center gap-3 min-w-0">
       <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm font-bold shrink-0">ALG</div>
+        <!-- 将λ替换为图片
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center">
+        <img
+        class="size-[1.8rem] object-contain"
+        src="/favicon.ico"
+        alt="网站图标"
+        />
+      </div>
+      -->
       <div class="min-w-0">
         <h1 class="font-bold text-white leading-none truncate">算法与复杂度可视化学习平台</h1>
         <p class="text-xs text-slate-500 leading-none mt-0.5">Angular + Spring Boot + Web3D</p>
@@ -39,23 +48,40 @@
     </div>
   </header>
 
+  <!-- Error Banner -->
   <div *ngIf="store.error()" class="bg-red-900/80 border-b border-red-700 px-5 py-2 text-sm text-red-200 flex items-center justify-between">
     <span>{{ store.error() }}</span>
     <button (click)="store.error.set(null)" class="text-red-400 hover:text-white ml-4">关闭</button>
   </div>
 
-  <div class="flex flex-1 min-h-0 overflow-hidden">
+  <!-- Main layout -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar -->
     <app-sidebar *ngIf="store.activePanel() === 'visualizer'" />
 
-    <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+    <!-- Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- History Panel -->
       <app-history-panel *ngIf="store.activePanel() === 'history'" />
+
+      <!-- Assessment Panel -->
       <app-assessment *ngIf="store.activePanel() === 'assessment'" />
 
+      <!-- Visualizer -->
       <ng-container *ngIf="store.activePanel() === 'visualizer'">
+
+        <!-- Control Panel -->
         <app-control-panel />
+
+        <!-- Input Config -->
         <app-input-config />
+
+        <!-- Phase Guide -->
         <app-phase-guide />
 
+        <!-- Compare Metrics -->
         <div *ngIf="store.compareMode() && compareMetrics() as m" class="px-4 py-2 bg-slate-900/80 border-b border-slate-700 flex-shrink-0">
           <div class="flex items-center justify-center gap-6 text-xs">
             <span class="text-blue-400 font-medium">{{ store.selectedAlgo() }}</span>
@@ -75,7 +101,10 @@
           </div>
         </div>
 
+        <!-- Complexity Analysis Panel (non-compare mode) -->
         <app-complexity-panel *ngIf="!store.compareMode()" />
+
+        <!-- AI Complexity Analysis Dialog -->
         <app-ai-complexity-dialog />
 
         <div *ngIf="store.isLoading()" class="flex-1 min-h-0 flex items-center justify-center">
