@@ -86,7 +86,7 @@ public class GraphService {
                 .queue(List.of(startId)).stack(List.of())
                 .current(null).path(List.of())
                 .description("初始化：dist[" + startId + "]=0，其余节点距离为 ∞")
-                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).build());
+                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).phase("init").build());
 
         while (true) {
             String u = null;
@@ -113,7 +113,7 @@ public class GraphService {
                     .queue(queue).stack(List.of())
                     .current(current).path(List.of())
                     .description("访问距离最小的未访问节点 " + current + "（距离=" + minD + "）")
-                    .codeLine(2).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                    .codeLine(2).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("select_min").build());
 
             if (current.equals(endId)) break;
 
@@ -133,7 +133,7 @@ public class GraphService {
                         .current(current).path(List.of())
                         .description("探索边 " + current + "→" + v + "（权重=" + edge.getWeight()
                                 + "），alt=" + alt + " vs dist[" + v + "]=" + dist.get(v))
-                        .codeLine(3).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                        .codeLine(3).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("explore_edge").build());
 
                 if (alt < dist.get(v)) {
                     dist.put(v, alt);
@@ -150,7 +150,7 @@ public class GraphService {
                             .queue(nodes.stream().filter(n -> !visited.contains(n) && dist.get(n) < INF).collect(Collectors.toList()))
                             .stack(List.of()).current(current).path(List.of())
                             .description("更新 dist[" + v + "] = " + alt)
-                            .codeLine(4).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                            .codeLine(4).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("update_dist").build());
                 } else {
                     edgeStates.put(edgeKey(current, v), "default");
                     if (!g.isDirected()) edgeStates.put(edgeKey(v, current), "default");
@@ -181,7 +181,7 @@ public class GraphService {
                         ? "✓ Dijkstra 完成，无法到达终点"
                         : "✓ 最短路径：" + String.join(" → ", path) + "（距离=" + finalDist + "）")
                 .codeLine(5).visitedCount(visited.size()).pathLength(finalDist < 0 ? 0 : finalDist)
-                .comparisons(comparisons[0]).build());
+                .comparisons(comparisons[0]).phase("reconstruct_path").build());
 
         return steps;
     }
@@ -206,7 +206,7 @@ public class GraphService {
                 .distances(Map.of()).queue(new ArrayList<>(queue)).stack(List.of())
                 .current(null).path(List.of())
                 .description("BFS 初始化，将起点 " + startId + " 加入队列")
-                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).build());
+                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).phase("init").build());
 
         while (!queue.isEmpty()) {
             String u = queue.poll();
@@ -218,7 +218,7 @@ public class GraphService {
                     .distances(Map.of()).queue(new ArrayList<>(queue)).stack(List.of())
                     .current(u).path(List.of())
                     .description("出队节点 " + u + "，开始探索其邻居")
-                    .codeLine(2).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                    .codeLine(2).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("dequeue").build());
 
             if (u.equals(endId)) break;
 
@@ -241,7 +241,7 @@ public class GraphService {
                             .distances(Map.of()).queue(new ArrayList<>(queue)).stack(List.of())
                             .current(u).path(List.of())
                             .description("发现新节点 " + v + "，加入队列")
-                            .codeLine(3).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                            .codeLine(3).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("discover_neighbor").build());
                 } else {
                     edgeStates.put(edgeKey(u, v), "default");
                     if (!g.isDirected()) edgeStates.put(edgeKey(v, u), "default");
@@ -257,7 +257,7 @@ public class GraphService {
                 .description(path.isEmpty()
                         ? "✓ BFS 完成，无法到达终点"
                         : "✓ BFS 完成，路径：" + String.join(" → ", path))
-                .codeLine(4).visitedCount(visited.size()).pathLength(path.size() - 1.0).comparisons(comparisons[0]).build());
+                .codeLine(4).visitedCount(visited.size()).pathLength(path.size() - 1.0).comparisons(comparisons[0]).phase("reconstruct_path").build());
         return steps;
     }
 
@@ -279,7 +279,7 @@ public class GraphService {
                 .distances(Map.of()).queue(List.of()).stack(new ArrayList<>(stack))
                 .current(null).path(List.of())
                 .description("DFS 初始化，将起点 " + startId + " 压入栈")
-                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).build());
+                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).phase("init").build());
 
         while (!stack.isEmpty()) {
             String u = stack.pop();
@@ -293,7 +293,7 @@ public class GraphService {
                     .distances(Map.of()).queue(List.of()).stack(new ArrayList<>(stack))
                     .current(u).path(List.of())
                     .description("出栈节点 " + u + "，标记为已访问")
-                    .codeLine(2).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                    .codeLine(2).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("pop_stack").build());
 
             if (u.equals(endId)) break;
 
@@ -314,7 +314,7 @@ public class GraphService {
                             .distances(Map.of()).queue(List.of()).stack(new ArrayList<>(stack))
                             .current(u).path(List.of())
                             .description("发现邻居 " + v + "，压入栈")
-                            .codeLine(3).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).build());
+                            .codeLine(3).visitedCount(visited.size()).pathLength(0).comparisons(comparisons[0]).phase("discover_neighbor").build());
                 }
             }
             if (!u.equals(startId) && !u.equals(endId)) nodeStates.put(u, "visited");
@@ -327,7 +327,7 @@ public class GraphService {
                 .description(path.isEmpty()
                         ? "✓ DFS 完成，无法到达终点"
                         : "✓ DFS 完成，路径：" + String.join(" → ", path))
-                .codeLine(4).visitedCount(visited.size()).pathLength(path.size() - 1.0).comparisons(comparisons[0]).build());
+                .codeLine(4).visitedCount(visited.size()).pathLength(path.size() - 1.0).comparisons(comparisons[0]).phase("reconstruct_path").build());
         return steps;
     }
 
@@ -348,7 +348,7 @@ public class GraphService {
                 .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                 .distances(Map.of()).queue(List.of()).stack(List.of()).current(startId).path(List.of())
                 .description("Prim 初始化，从节点 " + startId + " 开始构建 MST")
-                .codeLine(1).visitedCount(1).pathLength(0).comparisons(0).mstCost(0.0).build());
+                .codeLine(1).visitedCount(1).pathLength(0).comparisons(0).mstCost(0.0).phase("init").build());
 
         int nodeCount = g.getNodes().size();
         while (inMST.size() < nodeCount) {
@@ -374,14 +374,14 @@ public class GraphService {
                     .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                     .distances(Map.of()).queue(List.of()).stack(List.of()).current(bestV).path(List.of())
                     .description("添加最小权边 " + bestU + "-" + bestV + "（权重=" + minW + "），MST 总权重=" + mstCost[0])
-                    .codeLine(2).visitedCount(inMST.size()).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).build());
+                    .codeLine(2).visitedCount(inMST.size()).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).phase("add_to_mst").build());
         }
 
         steps.add(GraphStep.builder()
                 .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                 .distances(Map.of()).queue(List.of()).stack(List.of()).current(null).path(List.of())
                 .description("✓ Prim's MST 完成！最小生成树总权重 = " + mstCost[0])
-                .codeLine(3).visitedCount(inMST.size()).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).build());
+                .codeLine(3).visitedCount(inMST.size()).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).phase("done").build());
         return steps;
     }
 
@@ -405,7 +405,7 @@ public class GraphService {
                 .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                 .distances(Map.of()).queue(List.of()).stack(List.of()).current(null).path(List.of())
                 .description("Kruskal 初始化：将 " + edges.size() + " 条边按权重升序排列")
-                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).mstCost(0.0).build());
+                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).mstCost(0.0).phase("init").build());
 
         for (GraphRequest.GraphEdgeDto e : edges) {
             comparisons[0]++;
@@ -419,7 +419,7 @@ public class GraphService {
                     .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                     .distances(Map.of()).queue(List.of()).stack(List.of()).current(null).path(List.of())
                     .description("检查边 " + e.getFrom() + "-" + e.getTo() + "（权重=" + e.getWeight() + "）：是否形成环？")
-                    .codeLine(2).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).build());
+                    .codeLine(2).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).phase("check_cycle").build());
 
             if (!pu.equals(pv)) {
                 union(parent, pu, pv);
@@ -433,7 +433,7 @@ public class GraphService {
                         .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                         .distances(Map.of()).queue(List.of()).stack(List.of()).current(null).path(List.of())
                         .description("✓ 加入 MST：边 " + e.getFrom() + "-" + e.getTo() + "，MST 总权重=" + mstCost[0])
-                        .codeLine(3).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).build());
+                        .codeLine(3).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).phase("add_to_mst").build());
             } else {
                 edgeStates.put(edgeKey(e.getFrom(), e.getTo()), "default");
                 edgeStates.put(edgeKey(e.getTo(), e.getFrom()), "default");
@@ -441,7 +441,7 @@ public class GraphService {
                         .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                         .distances(Map.of()).queue(List.of()).stack(List.of()).current(null).path(List.of())
                         .description("✗ 跳过：边 " + e.getFrom() + "-" + e.getTo() + " 会形成环")
-                        .codeLine(4).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).build());
+                        .codeLine(4).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).phase("skip_edge").build());
             }
         }
 
@@ -449,7 +449,7 @@ public class GraphService {
                 .nodeStates(new LinkedHashMap<>(nodeStates)).edgeStates(new LinkedHashMap<>(edgeStates))
                 .distances(Map.of()).queue(List.of()).stack(List.of()).current(null).path(List.of())
                 .description("✓ Kruskal's MST 完成！最小生成树总权重 = " + mstCost[0])
-                .codeLine(5).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).build());
+                .codeLine(5).visitedCount(0).pathLength(mstCost[0]).comparisons(comparisons[0]).mstCost(mstCost[0]).phase("done").build());
         return steps;
     }
 
@@ -489,7 +489,7 @@ public class GraphService {
                 .distances(new HashMap<>(gCost)).queue(new ArrayList<>(open)).stack(List.of())
                 .current(null).path(List.of())
                 .description("A* 初始化，g[" + startId + "]=0，h=" + String.format("%.1f", fCost.get(startId)))
-                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).build());
+                .codeLine(1).visitedCount(0).pathLength(0).comparisons(0).phase("init").build());
 
         while (!open.isEmpty()) {
             String u = open.poll();
@@ -502,7 +502,7 @@ public class GraphService {
                     .distances(new HashMap<>(gCost)).queue(openList).stack(List.of())
                     .current(u).path(List.of())
                     .description("从 Open 列表中取出 f 值最小节点 " + u + "（g=" + gCost.get(u) + ", f=" + String.format("%.1f", fCost.get(u)) + "）")
-                    .codeLine(2).visitedCount(closed.size()).pathLength(0).comparisons(comparisons[0]).build());
+                    .codeLine(2).visitedCount(closed.size()).pathLength(0).comparisons(comparisons[0]).phase("select_min").build());
 
             if (u.equals(endId)) break;
             closed.add(u);
@@ -533,7 +533,7 @@ public class GraphService {
                             .distances(new HashMap<>(gCost)).queue(new ArrayList<>(open)).stack(List.of())
                             .current(u).path(List.of())
                             .description("更新 " + v + "：g=" + tentativeG + ", h=" + String.format("%.1f", h) + ", f=" + String.format("%.1f", fCost.get(v)))
-                            .codeLine(3).visitedCount(closed.size()).pathLength(0).comparisons(comparisons[0]).build());
+                            .codeLine(3).visitedCount(closed.size()).pathLength(0).comparisons(comparisons[0]).phase("update_dist").build());
                 } else {
                     edgeStates.put(edgeKey(u, v), "default");
                     if (!g.isDirected()) edgeStates.put(edgeKey(v, u), "default");
@@ -550,7 +550,7 @@ public class GraphService {
                 .description(path.isEmpty()
                         ? "✓ A* 完成，无法到达终点"
                         : "✓ A* 完成，最优路径：" + String.join(" → ", path) + "（代价=" + pathLen + "）")
-                .codeLine(4).visitedCount(closed.size()).pathLength(pathLen).comparisons(comparisons[0]).build());
+                .codeLine(4).visitedCount(closed.size()).pathLength(pathLen).comparisons(comparisons[0]).phase("reconstruct_path").build());
         return steps;
     }
 

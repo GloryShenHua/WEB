@@ -1,10 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { AlgorithmId } from '../../models/algorithm.models';
 
-interface AlgoEntry { id: AlgorithmId; label: string; complexity: string; }
-interface AlgoGroup { category: string; icon: string; items: AlgoEntry[]; }
+interface AlgoEntry {
+  id: AlgorithmId;
+  label: string;
+  complexity: string;
+}
+
+interface AlgoGroup {
+  category: string;
+  icon: string;
+  items: AlgoEntry[];
+}
 
 @Component({
   selector: 'app-sidebar',
@@ -15,54 +24,87 @@ interface AlgoGroup { category: string; icon: string; items: AlgoEntry[]; }
 export class SidebarComponent {
   groups: AlgoGroup[] = [
     {
-      category: '排序算法', icon: '📊',
+      category: '排序算法',
+      icon: 'Sort',
       items: [
-        { id: 'quick-sort',     label: '快速排序',   complexity: 'O(n log n)' },
-        { id: 'merge-sort',     label: '归并排序',   complexity: 'O(n log n)' },
-        { id: 'bubble-sort',    label: '冒泡排序',   complexity: 'O(n²)' },
-        { id: 'heap-sort',      label: '堆排序',     complexity: 'O(n log n)' },
-        { id: 'insertion-sort', label: '插入排序',   complexity: 'O(n²)' },
+        { id: 'quick-sort', label: '快速排序', complexity: 'O(n log n)' },
+        { id: 'merge-sort', label: '归并排序', complexity: 'O(n log n)' },
+        { id: 'bubble-sort', label: '冒泡排序', complexity: 'O(n^2)' },
+        { id: 'heap-sort', label: '堆排序', complexity: 'O(n log n)' },
+        { id: 'insertion-sort', label: '插入排序', complexity: 'O(n^2)' },
       ],
     },
     {
-      category: '搜索类', icon: '🔍',
+      category: '搜索算法',
+      icon: 'Search',
       items: [
         { id: 'binary-search', label: '二分查找', complexity: 'O(log n)' },
-        { id: 'bfs',           label: 'BFS 广度优先', complexity: 'O(V+E)' },
-        { id: 'dfs',           label: 'DFS 深度优先', complexity: 'O(V+E)' },
+        { id: 'bfs', label: 'BFS 广度优先', complexity: 'O(V+E)' },
+        { id: 'dfs', label: 'DFS 深度优先', complexity: 'O(V+E)' },
       ],
     },
     {
-      category: '贪心算法', icon: '💚',
+      category: '贪心算法',
+      icon: 'Greedy',
       items: [
-        { id: 'astar', label: 'A* 启发搜索', complexity: 'O(E log V)' },
+        { id: 'astar', label: 'A* 启发式搜索', complexity: 'O(E log V)' },
       ],
     },
     {
-      category: '图算法', icon: '🕸',
+      category: '图算法',
+      icon: 'Graph',
       items: [
         { id: 'dijkstra', label: 'Dijkstra 最短路', complexity: 'O((V+E)logV)' },
-        { id: 'prim',     label: "Prim's MST",      complexity: 'O(E log V)' },
-        { id: 'kruskal',  label: "Kruskal's MST",   complexity: 'O(E log E)' },
+        { id: 'prim', label: 'Prim 最小生成树', complexity: 'O(E log V)' },
+        { id: 'kruskal', label: 'Kruskal 最小生成树', complexity: 'O(E log E)' },
       ],
     },
     {
-      category: '动态规划', icon: '💡',
+      category: '动态规划',
+      icon: 'DP',
       items: [
         { id: 'knapsack', label: '0/1 背包', complexity: 'O(nW)' },
       ],
     },
     {
-      category: '回溯算法', icon: '♟',
+      category: '回溯算法',
+      icon: 'Backtrack',
       items: [
-        { id: 'n-queens', label: 'N 皇后 / 八皇后', complexity: 'O(n!)' },
+        { id: 'n-queens', label: 'N 皇后', complexity: 'O(n!)' },
+      ],
+    },
+    {
+      category: '分治算法',
+      icon: 'Divide',
+      items: [
+        { id: 'karatsuba', label: '大整数乘法 Karatsuba', complexity: 'O(n^1.585)' },
+      ],
+    },
+    {
+      category: 'Web3D',
+      icon: '3D',
+      items: [
+        { id: 'data-structure-3d', label: '3D 数据结构学习', complexity: 'Three.js' },
       ],
     },
   ];
+
+  compareSiblings = computed(() => {
+    const cat = this.store.category();
+    const allItems = this.groups.flatMap(group => group.items);
+    return allItems.filter(item => {
+      const itemCat = this.store.getCategoryForAlgo(item.id);
+      return itemCat === cat && item.id !== this.store.selectedAlgo();
+    });
+  });
 
   constructor(public store: AlgorithmStore) {}
 
   select(id: AlgorithmId): void {
     this.store.setAlgorithm(id);
+  }
+
+  selectCompare(id: AlgorithmId): void {
+    this.store.compareAlgo.set(id);
   }
 }

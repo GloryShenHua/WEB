@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { NQueensStep } from '../../models/algorithm.models';
@@ -10,7 +10,14 @@ import { NQueensStep } from '../../models/algorithm.models';
   templateUrl: './n-queens-visualizer.component.html',
 })
 export class NQueensVisualizerComponent {
-  step = computed(() => this.store.currentStepData() as NQueensStep | null);
+  @Input() source: 'primary' | 'compare' = 'primary';
+
+  step = computed(() => {
+    const data = this.source === 'primary'
+      ? this.store.currentStepData()
+      : this.store.compareCurrentStepData();
+    return data as NQueensStep | null;
+  });
 
   rows = computed(() => {
     const s = this.step();

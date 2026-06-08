@@ -23,17 +23,23 @@ public class AlgorithmController {
     private final GraphService graphService;
     private final DPService dpService;
     private final BacktrackingService backtrackingService;
+    private final DivideConquerService divideConquerService;
+    private final AlgorithmComplexityService algorithmComplexityService;
     private final RunHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
 
     public AlgorithmController(SortingService sortingService, SearchService searchService,
             GraphService graphService, DPService dpService, BacktrackingService backtrackingService,
+            DivideConquerService divideConquerService,
+            AlgorithmComplexityService algorithmComplexityService,
             RunHistoryRepository historyRepository, ObjectMapper objectMapper) {
         this.sortingService = sortingService;
         this.searchService = searchService;
         this.graphService = graphService;
         this.dpService = dpService;
         this.backtrackingService = backtrackingService;
+        this.divideConquerService = divideConquerService;
+        this.algorithmComplexityService = algorithmComplexityService;
         this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
     }
@@ -109,6 +115,27 @@ public class AlgorithmController {
         return ok(steps, steps.size(), 0, last.getBacktracks(), elapsed);
     }
 
+    // ==================== DIVIDE & CONQUER ====================
+    @PostMapping("/divide-conquer")
+    public ResponseEntity<Map<String, Object>> divideConquer(@Valid @RequestBody DivideConquerRequest req) throws Exception {
+        long start = System.currentTimeMillis();
+        List<DivideConquerStep> steps = divideConquerService.generateSteps(req.getAlgorithm(), req.getX(), req.getY());
+        long elapsed = System.currentTimeMillis() - start;
+
+        DivideConquerStep last = steps.get(steps.size() - 1);
+        saveHistory("divide-conquer", req.getAlgorithm(), objectMapper.writeValueAsString(req),
+                steps.size(), last.getMultiplications(), last.getAdditions(), elapsed);
+
+        return ok(steps, steps.size(), last.getMultiplications(), last.getAdditions(), elapsed);
+    }
+
+    // ==================== AI CUSTOM COMPLEXITY ====================
+    @PostMapping("/algorithm-complexity")
+    public ResponseEntity<AlgorithmComplexityAnalysis> analyzeAlgorithmComplexity(
+            @Valid @RequestBody AlgorithmComplexityRequest req) {
+        return ResponseEntity.ok(algorithmComplexityService.analyze(req));
+    }
+
     // ==================== HISTORY ====================
     @GetMapping("/history")
     public ResponseEntity<List<RunHistory>> getHistory(
@@ -123,6 +150,78 @@ public class AlgorithmController {
     public ResponseEntity<Void> deleteHistory(@PathVariable Long id) {
         historyRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== VERIFY STEP ====================
+    @PostMapping("/verify-step")
+    public ResponseEntity<Map<String, Object>> verifyStep(@RequestBody Map<String, Object> req) throws Exception {
+        String algorithm = (String) req.get("algorithm");
+        int targetStepIndex = req.get("targetStepIndex") != null ? (int) req.get("targetStepIndex") : 0;
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> params = (Map<String, Object>) req.get("params");
+
+        if (algorithm == null || params == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "algorithm and params are required"));
+        }
+
+        Object stepData = null;
+        String category = null;
+
+        if (List.of("quick-sort", "merge-sort", "bubble-sort", "heap-sort", "insertion-sort").contains(algorithm)) {
+            @SuppressWarnings("unchecked")
+            List<Integer> array = ((List<Number>) params.get("array")).stream()
+                    .map(Number::intValue).collect(java.util.stream.Collectors.toList());
+            List<SortStep> steps = sortingService.generateSteps(algorithm, array);
+            category = "sorting";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        } else if ("binary-search".equals(algorithm)) {
+            @SuppressWarnings("unchecked")
+            List<Integer> array = ((List<Number>) params.get("array")).stream()
+                    .map(Number::intValue).collect(java.util.stream.Collectors.toList());
+            int target = ((Number) params.get("target")).intValue();
+            List<SearchStep> steps = searchService.generateSteps(algorithm, array, target);
+            category = "search";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        } else if (List.of("dijkstra", "bfs", "dfs", "prim", "kruskal", "astar").contains(algorithm)) {
+            // For graph, we need to reconstruct GraphData from params
+            category = "graph";
+            stepData = Map.of("message", "Graph verification requires running algorithm in visualizer");
+        } else if ("knapsack".equals(algorithm)) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> itemsRaw = (List<Map<String, Object>>) params.get("items");
+            int capacity = ((Number) params.get("capacity")).intValue();
+            List<com.algorithmviz.dto.DPRequest.KnapsackItemDto> items = itemsRaw.stream().map(m -> {
+                com.algorithmviz.dto.DPRequest.KnapsackItemDto dto = new com.algorithmviz.dto.DPRequest.KnapsackItemDto();
+                dto.setName((String) m.get("name"));
+                dto.setWeight(((Number) m.get("weight")).intValue());
+                dto.setValue(((Number) m.get("value")).intValue());
+                return dto;
+            }).collect(java.util.stream.Collectors.toList());
+            List<DPStep> steps = dpService.generateSteps(algorithm, items, capacity);
+            category = "dp";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        } else if ("n-queens".equals(algorithm)) {
+            int n = ((Number) params.get("n")).intValue();
+            List<NQueensStep> steps = backtrackingService.generateSteps(algorithm, n);
+            category = "backtracking";
+            if (targetStepIndex >= 0 && targetStepIndex < steps.size()) {
+                stepData = steps.get(targetStepIndex);
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("algorithm", algorithm);
+        result.put("category", category);
+        result.put("targetStepIndex", targetStepIndex);
+        result.put("stepData", stepData);
+        return ResponseEntity.ok(result);
     }
 
     // ==================== HEALTH ====================

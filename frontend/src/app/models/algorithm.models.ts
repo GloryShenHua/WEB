@@ -1,12 +1,14 @@
 // ===================== COMMON =====================
-export type AlgorithmCategory = 'sorting' | 'graph' | 'search' | 'dp' | 'backtracking';
+export type AlgorithmCategory = 'sorting' | 'graph' | 'search' | 'dp' | 'backtracking' | 'divide-conquer'|'vr-3d';
 
 export type AlgorithmId =
   | 'quick-sort' | 'merge-sort' | 'bubble-sort' | 'heap-sort' | 'insertion-sort'
   | 'binary-search'
   | 'dijkstra' | 'bfs' | 'dfs' | 'prim' | 'kruskal' | 'astar'
   | 'knapsack'
-  | 'n-queens';
+  | 'n-queens'
+  | 'karatsuba'
+  | 'data-structure-3d';
 
 export interface Metrics {
   comparisons: number;
@@ -34,6 +36,7 @@ export interface SortStep {
   mergeLeft?: number[];
   mergeRight?: number[];
   mergeTarget?: number;
+  phase: string;
 }
 
 // ===================== GRAPH =====================
@@ -78,6 +81,7 @@ export interface GraphStep {
   pathLength: number;
   comparisons: number;
   mstCost?: number;
+  phase: string;
 }
 
 // ===================== SEARCH =====================
@@ -92,6 +96,7 @@ export interface SearchStep {
   description: string;
   codeLine: number;
   comparisons: number;
+  phase: string;
 }
 
 // ===================== DP =====================
@@ -112,6 +117,7 @@ export interface DPStep {
   selectedItems: number[];
   tracePath: number[][];
   comparisons: number;
+  phase: string;
 }
 
 // ===================== BACKTRACKING =====================
@@ -128,9 +134,45 @@ export interface NQueensStep {
   backtracks: number;
   solutionsFound: number;
   solutions: number[][];
+  phase: string;
 }
 
-export type AnyStep = SortStep | GraphStep | SearchStep | DPStep | NQueensStep;
+// ===================== DIVIDE & CONQUER =====================
+export interface DivideConquerTreeNode {
+  id: string;
+  parentId: string | null;
+  label: string;
+  x: string;
+  y: string;
+  result: string | null;
+  depth: number;
+  state: 'pending' | 'current' | 'done';
+}
+
+export interface DivideConquerStep {
+  tree: DivideConquerTreeNode[];
+  currentNodeId: string | null;
+  phase: 'divide' | 'split' | 'base' | 'z2' | 'z0' | 'z1' | 'combine' | 'finish';
+  x: string;
+  y: string;
+  a: string;
+  b: string;
+  c: string;
+  d: string;
+  split: number;
+  z2: string;
+  z1: string;
+  z0: string;
+  result: string;
+  formula: string;
+  description: string;
+  codeLine: number;
+  depth: number;
+  multiplications: number;
+  additions: number;
+}
+
+export type AnyStep = SortStep | GraphStep | SearchStep | DPStep | NQueensStep | DivideConquerStep;
 
 // ===================== API RESPONSE =====================
 export interface AlgorithmResponse<T> {
@@ -151,6 +193,24 @@ export interface RunHistory {
   swaps: number;
   executionTimeMs: number;
   createdAt: string;
+}
+// ===================== ALGORITHM COMPLEXITY Analysis=====================
+export interface AlgorithmComplexityRequest {
+  code: string;
+  language: string;
+  caseType: string;
+}
+
+export interface AlgorithmComplexityAnalysis {
+  timeComplexityWorst: string;
+  timeComplexityAverage: string;
+  timeComplexityBest: string;
+  spaceComplexity: string;
+  reasoningSteps: string[];
+  assumptions: string[];
+  optimizationSuggestions: string[];
+  confidence: number;
+  rawText?: string;
 }
 
 // ===================== APP STATE =====================
@@ -173,6 +233,26 @@ export interface AppState {
   knapsackItems: KnapsackItem[];
   knapsackCapacity: number;
   queensN: number;
+  divideX: string;
+  divideY: string;
 
-  activePanel: 'visualizer' | 'history';
+  activePanel: 'visualizer' | 'history' | 'assessment';
+}
+
+// ===================== TEST SCENARIOS =====================
+export type QuestionType = 'value-fill' | 'state-fill' | 'path-fill' | 'table-fill' | 'choice';
+
+export interface TestScenario {
+  id: number;
+  title: string;
+  category: AlgorithmCategory;
+  algorithm: AlgorithmId;
+  questionType: QuestionType;
+  description: string;
+  inputParams: Record<string, unknown>;
+  answer: unknown;
+  options?: string[];
+  explanation: string;
+  targetStepIndex?: number;
+  verifyField?: string;
 }

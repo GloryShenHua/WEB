@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   AlgorithmResponse, SortStep, SearchStep, GraphStep, DPStep, NQueensStep,
-  GraphData, KnapsackItem, RunHistory
+  GraphData, KnapsackItem, RunHistory, DivideConquerStep,
+  AlgorithmComplexityAnalysis, AlgorithmComplexityRequest
 } from '../models/algorithm.models';
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,14 @@ export class AlgorithmService {
     return this.http.post<AlgorithmResponse<NQueensStep>>(`${this.base}/backtracking`, { algorithm, n });
   }
 
+  runDivideConquer(algorithm: string, x: string, y: string): Observable<AlgorithmResponse<DivideConquerStep>> {
+    return this.http.post<AlgorithmResponse<DivideConquerStep>>(`${this.base}/divide-conquer`, { algorithm, x, y });
+  }
+
+  analyzeAlgorithmComplexity(request: AlgorithmComplexityRequest): Observable<AlgorithmComplexityAnalysis> {
+    return this.http.post<AlgorithmComplexityAnalysis>(`${this.base}/algorithm-complexity`, request);
+  }
+
   getHistory(category?: string): Observable<RunHistory[]> {
     const params = category ? `?category=${category}` : '';
     return this.http.get<RunHistory[]>(`${this.base}/history${params}`);
@@ -40,5 +49,9 @@ export class AlgorithmService {
 
   deleteHistory(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/history/${id}`);
+  }
+
+  verifyStep(algorithm: string, params: Record<string, unknown>, targetStepIndex: number): Observable<{ stepData: unknown }> {
+    return this.http.post<{ stepData: unknown }>(`${this.base}/verify-step`, { algorithm, params, targetStepIndex });
   }
 }
