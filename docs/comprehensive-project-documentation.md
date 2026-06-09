@@ -1,6 +1,6 @@
 # 算法与复杂度可视化学习平台 — 项目综合文档
 
-> 版本 1.0.0 | 2026-06-06 | Angular 17 + Spring Boot 3.2 + MySQL
+> 版本 1.1.0 | 2026-06-09 | Angular 17 + Spring Boot 3.2 + MySQL + Docker + AWS ECS
 
 ---
 
@@ -463,6 +463,7 @@ interface TestScenario {
 - **简单设计**：无 JWT、无 Session Cookie，适合教学/学习场景
 - **注册后行为**：注册成功后**不自动登录**——而是通过 `onSuccess` 回调切换回登录页面，自动填入已注册用户名，并显示 "注册成功，请登录。" 绿色提示。这避免了注册即登录可能带来的会话混淆问题
 - **反馈管理**：`clearFeedback()` 方法同时清除 `error` 和 `success` 两个信号，在模式切换（登录↔注册）和登出时调用
+- **登录页 UI**：采用全屏背景图 + 渐变遮罩层设计。左侧展示平台标题，右侧为毛玻璃效果（`backdrop-blur`）的登录/注册卡片。背景图位于 `frontend/src/assets/login-bg.png`（约 1.7MB），通过 CSS `absolute inset-0` + `object-cover` 实现全屏覆盖，叠加多层半透明渐变（`bg-slate-950/55` + `bg-gradient-to-r`）保证表单区域的可读性
 
 ### 4.7 3D 数据结构可视化
 
@@ -484,6 +485,11 @@ Vr3dVisualizerComponent (Angular 容器)
 - 根据输入数据生成 3D 对象
 - 管理节点的增删改动画
 - 处理鼠标交互（旋转、缩放）
+
+**最近改进**（commit `37dc01c` + `c5dffb7`）：
+- **B+ 树动画器大幅扩展**：`b-plus-tree.animator.ts` 经历 820 行重构，支持查找（高亮路径）、插入（叶子分裂动画）、删除（借位/合并）、范围查询（链表顺序扫描）等完整操作演示
+- **二叉树生成修复**：修复了随机生成时可能产生非法 BST 的问题。`AlgorithmStore.randomVr3dData()` 改为先生成不重复的数值集合（`new Set`），再通过 `toBinarySearchTreeValues()` 转换为符合 BST 插入顺序的值序列，确保渲染的二叉树结构正确
+- **VR-3D 可视化器重构**：`vr-3d-visualizer.component.ts` 经历 577 行重构，改善了组件结构、操作卡片交互和 Three.js 场景生命周期管理
 
 ### 4.8 统一响应格式
 
@@ -564,6 +570,32 @@ Vr3dVisualizerComponent (Angular 容器)
 - 数据库密码：已有 `DB_PASSWORD` 环境变量支持（commit `eff8979`），配置文件中设为空字符串，运行时从环境变量读取
 - API Key：同样置空，部署时通过环境变量注入
 - 在 `.gitignore` 中确认 `application.properties` 不包含敏感信息
+
+#### 问题 3：前后端端口硬编码导致部署兼容性问题
+
+**现象**：
+在 Docker 容器化部署到 AWS ECS 时，前端开发环境中的 `apiUrl: 'http://localhost:8080/api'` 和后端 `application.properties` 中的 `server.port=8080` 均为硬编码值，与容器内部网络和 Nginx 反向代理配置不一致。
+
+**问题分析**：
+1. **前端**：开发环境 `environment.ts` 将 API 地址硬编码为 `http://localhost:8080/api`。Docker 部署时前端静态资源由 Nginx 容器承载，API 请求应通过 Nginx 反向代理转发（如 `/api` → `backend:8080`），而非直接请求 `localhost:8080`
+2. **后端**：`server.port=8080` 在容器内仍然有效（容器内部端口），但开发环境和生产环境使用相同配置缺乏区分度
+3. **Nginx 代理**：需要 `nginx.conf` 正确配置 `proxy_pass http://backend:8080/api`（容器间通过 Docker 网络通信），如果后端端口配置与 Nginx 配置不一致，将导致 502 错误
+
+**改进方案**：
+- **前端**：通过 Angular 的 `file replacement` 机制在 `angular.json` 中配置环境切换：
+  ```json
+  // angular.json 中的配置
+  "production": {
+    "fileReplacements": [
+      { "replace": "src/environments/environment.ts", "with": "src/environments/environment.prod.ts" }
+    ]
+  }
+  ```
+  生产环境 `environment.prod.ts` 使用相对路径 `apiUrl: '/api'`，由 Nginx 同源代理，消除跨域和端口依赖
+- **后端**：`server.port` 保持默认 8080（容器内足够），通过 Docker Compose 的 `ports` 映射或 Nginx 的 `proxy_pass` 暴露服务
+- **Docker 网络**：容器间通过服务名通信（`backend:8080`），不依赖宿主机 IP 或端口
+
+**效果**：生产构建 `npm run build --configuration production` 自动使用相对路径，部署到任何域名/端口均可正常工作，不再需要修改代码。
 
 ---
 
@@ -683,70 +715,93 @@ services:
     depends_on:
       - backend
 ```
-#### 5.8.2 部署到远程服务器
-1. 简介
-- AWS ECS 服务器 (Ubuntu) + Docker 容器 + Nginx 代理，前端静态资源由 Nginx 承载，后端独立容器运行，数据库容器化部署
-- 访问`http://3.212.58.111` （由于是AWS平台，需要访问“外”网）
+#### 5.8.2 部署到远程服务器（AWS ECS / 公有云）
+
+**目标环境**：AWS ECS 服务器 (Ubuntu) + Docker 容器 + Nginx 反向代理
+
+**总体架构**：
 ```text
-用户 → 公有云公网IP → 宿主机（云服务器）  
-                       ├── Nginx 容器（反向代理 + 前端静态资源）  
-                       ├── 后端 API 容器（Node.js/Java）  
-                       └── 数据库容器（MySQL）
+用户浏览器 → http://3.212.58.111 → 宿主机（云服务器）
+                                      ├── Nginx 容器（:80）→ 反向代理 + 承载前端静态资源
+                                      ├── 后端 API 容器（:8080，仅容器内网可达）
+                                      └── MySQL 数据库容器（:3306，仅容器内网可达）
 ```
-2. 过程
-- 1.前后端打包
+
+**部署的 `deploy/` 目录文件结构**：
+```bash
+deploy/
+├── backend/
+│   ├── Dockerfile          # 后端镜像构建文件
+│   └── app.jar             # Maven 构建产物
+├── docker-compose.yml      # 三容器编排
+└── nginx/
+    ├── dist/               # Angular ng build 产物
+    │   └── browser/
+    │       ├── index.html
+    │       ├── main-*.js
+    │       ├── polyfills-*.js
+    │       └── styles-*.css
+    └── nginx.conf           # Nginx 反向代理配置
+```
+
+**部署步骤**：
+
+**第一步：前后端打包**
 ```shell
-#front
+# 前端 — 必须使用 production 配置（apiUrl='/api'，Nginx 同源代理）
 cd frontend/
 npm install
 ng build --configuration production
-#back
+
+# 后端 — 跳过测试，打包为可执行 JAR
 cd backend/
 mvn clean package -DskipTests
-#上传
+
+# 将 deploy 目录上传至云服务器
 scp -r deploy ubuntu@3.212.58.111:/home/ubuntu/
 ```
-- 2.安装docker与mysql
-> mysql需要设定对应密码
-- 3.使用docker构建并启动docker容器
->需要注意非root用户无docker操纵权限，需要授予权限
-```shell
-#构建
-cd deploy/
-docker compose up -d --build #only once
-#查看对应容器
-#状态应为up
-docker ps -a # 或者 docker compose ps
-#停止项目目录下所有容器
-docker compose stop
-#重新启动容器
-#等同于先执行 docker compose stop 再执行 docker compose start
-#当配置发生较大变动时，使用 docker compose up -d --force-recreate 以确保更改被完全应用并让容器从全新状态开始运行
-docker compose restart 容器名 #one
-docker compose restart #all
 
-#删除当前项目目录下所有容器
+**第二步：服务器环境准备**
+- 安装 Docker Engine 和 Docker Compose
+- 安装 MySQL（或使用 Docker 容器化 MySQL）
+- 为非 root 用户授予 Docker 操作权限：`sudo usermod -aG docker $USER`
+
+**第三步：Docker 构建与启动**
+```shell
+cd /home/ubuntu/deploy/
+
+# 首次构建并启动（--build 强制重新构建镜像）
+docker compose up -d --build
+
+# 查看容器状态（所有容器应为 Up）
+docker compose ps
+
+# 日常运维命令
+docker compose stop              # 停止所有容器
+docker compose start             # 启动已停止的容器
+docker compose restart           # 重启所有容器
+docker compose restart 容器名    # 重启单个容器
+docker compose restart backend   # 例如：仅重启后端容器
+
+# 配置较大变动时（如 nginx.conf 或环境变量修改）
+docker compose up -d --force-recreate
+
+# 完全移除所有容器（不删除数据卷）
 docker compose down
 ```
-**文件结构**
+
+**第四步：验证部署**
 ```bash
-├── backend
-│   ├── Dockerfile
-│   └── app.jar
-├── docker-compose.yml
-└── nginx
-    ├── dist
-    │   ├── 3rdpartylicenses.txt
-    │   └── browser
-    │       ├── chunk-DXPD2P6U.js
-    │       ├── chunk-IZB2CETZ.js
-    │       ├── favicon.ico
-    │       ├── index.html
-    │       ├── main-SZEZEQBN.js
-    │       ├── polyfills-FFHMD2TL.js
-    │       └── styles-H3WM2JRZ.css
-    └── nginx.conf 
+# 公网访问
+curl http://3.212.58.111
+# 应返回 Angular 应用的 index.html
+
+# 后端健康检查（通过 Nginx 代理）
+curl http://3.212.58.111/api/algorithms/health
+# 返回: {“status”:”ok”,”service”:”Algorithm Viz Backend”}
 ```
+
+**当前部署状态**：已完成，运行在 **http://3.212.58.111** 。
 ### 5.9 健康检查
 
 ```bash
@@ -1288,11 +1343,15 @@ CREATE TABLE run_history (
 | `frontend/package.json` | npm 依赖和脚本 |
 | `frontend/angular.json` | Angular CLI 配置 |
 | `frontend/tailwind.config.js` | Tailwind CSS 配置 |
-| `frontend/src/environments/environment.ts` | 开发环境变量（apiUrl） |
+| `frontend/src/environments/environment.ts` | 开发环境变量（apiUrl=`http://localhost:8080/api`） |
+| `frontend/src/environments/environment.prod.ts` | 生产环境变量（apiUrl=`/api`，Nginx 同源代理） |
 | `frontend/src/styles.css` | 全局 Tailwind 样式入口 |
+| `frontend/src/assets/login-bg.png` | 登录页背景图（约 1.7MB，全屏覆盖 + 渐变遮罩） |
 | `docs/learning-guidance-system.md` | 学习引导系统独立设计文档 |
+| `docs/comprehensive-project-documentation.md` | 本文档（项目分析、设计、实现、部署、使用全貌） |
+| `docs/部署文档.md` | AWS ECS Docker 部署专项文档 |
 | `CLAUDE.md` | Claude Code 项目指引文件 |
 
 ---
 
-> **文档维护说明**：本文档描述项目截至 2026-06-06 的全貌。代码变更后请同步更新相关章节。
+> **文档维护说明**：本文档描述项目截至 2026-06-09 的全貌。代码变更后请同步更新相关章节。此文档整合了 `docs/部署文档.md` 的部署内容，可作为 PPT 汇报的基础材料。
