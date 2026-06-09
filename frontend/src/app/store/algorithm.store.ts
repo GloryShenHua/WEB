@@ -496,7 +496,7 @@ export class AlgorithmStore {
   }
 
   setVr3dData(values: string[]): void {
-    this.vr3dData.set({ values });
+    this.vr3dData.set({ values: this.normalizeStructureValues(values) });
   }
 
   randomVr3dData(): void {
@@ -551,7 +551,11 @@ export class AlgorithmStore {
       values.pop();
     }
 
-    return values.map(value => value ?? '');
+    return this.normalizeStructureValues(values);
+  }
+
+  private normalizeStructureValues(values: string[]): string[] {
+    return Array.from({ length: values.length }, (_, index) => values[index] ?? '');
   }
 
   setActivePanel(p: 'visualizer' | 'history' | 'assessment'): void {

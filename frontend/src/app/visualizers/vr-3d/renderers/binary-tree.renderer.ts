@@ -31,7 +31,7 @@ export class BinaryTreeRenderer {
                 z,
                 index,
             };
-        }).filter(node => node.v !== '');
+        }).filter(node => node.v != null && node.v !== '');
 
         nodes.forEach(node => {
             if (node.index === 0) {
