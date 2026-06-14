@@ -733,7 +733,8 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root123
+      # 需要改为对应mysql密码
+      MYSQL_ROOT_PASSWORD: 
       MYSQL_DATABASE: algorithm_viz
     ports:
       - "3306:3306"
@@ -745,7 +746,8 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/algorithm_viz?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root123
+      # 对应密码
+      SPRING_DATASOURCE_PASSWORD: 
     depends_on:
       - mysql
 
