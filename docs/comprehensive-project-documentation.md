@@ -46,6 +46,43 @@
 AI 服务：并行智算云 DeepSeek-V3.2 (兼容 OpenAI 格式)
 ```
 
+### 1.4 AI 辅助开发方法
+
+本项目在开发过程中广泛使用 AI 编程助手（Claude Code 等）来加速框架搭建和代码生成。以下是 AI 辅助开发的关键环节和工作模式。
+
+#### 1.4.1 项目框架搭建
+
+**Spring Boot 后端脚手架**：通过自然语言描述需求（"搭建一个 Spring Boot 3.2 项目，包含 JPA、MySQL、CORS 配置"），AI 生成了完整的项目骨架——包括 `pom.xml` 依赖声明、`application.properties` 数据源配置、`CorsConfig` 跨域配置类、以及 `AlgorithmVizApplication` 主入口。人工只需补充数据库密码等环境变量即可运行。
+
+**Angular 前端脚手架**：通过描述组件树和路由需求，AI 一次性生成了 Standalone Components 体系——`AppComponent`、`SidebarComponent`、`ControlPanelComponent` 及 7 个 Visualizer 组件的骨架代码（含 TypeScript 逻辑、HTML 模板和 Tailwind 样式），省去了逐个 `ng generate` 和样板代码填写的时间。AI 还自动配置了 `angular.json` 中的生产环境文件替换策略（`environment.ts` → `environment.prod.ts`），使首次部署时即避免了端口硬编码问题。
+
+**Docker 部署体系**：`Dockerfile`（前后端各一份）、`docker-compose.yml`（MySQL + Backend + Frontend + Nginx 四容器编排）、`nginx.conf`（反向代理规则）均由 AI 根据项目结构生成初版，人工仅调整了环境变量和服务名以适配 AWS ECS 实际网络拓扑。
+
+#### 1.4.2 算法实现与步骤生成
+
+17 种算法的 Service 层代码（如 `SortingService` 中的快速排序、`GraphService` 中的 Dijkstra）遵循统一的"执行 + 记录"模式——在标准算法逻辑的每个关键操作点插入 `Step` 对象的构建和收集。这类代码具有高度模式化特征：不同算法的差异在于具体逻辑，但 Step 构建、列表管理、计数器维护的结构完全一致。AI 在理解一种算法的实现模式后，能快速复用到其余 16 种算法，人工仅需验证步骤划分的合理性和教学语义的准确性。
+
+#### 1.4.3 前后端类型同步
+
+前端 TypeScript 接口（`algorithm.models.ts` 中的 `SortStep`、`GraphStep` 等）与后端 Java 模型类（`model/SortStep.java`、`model/GraphStep.java` 等）之间存在严格的字段对应关系。当后端 Step 模型新增字段（如 `phase`、`codeLine`）时，AI 可同步更新前端接口定义和 Visualizer 中的渲染逻辑，避免人工逐文件查找和修改导致的遗漏。
+
+#### 1.4.4 AI 辅助的工作模式总结
+
+| 阶段 | AI 的角色 | 人工的职责 |
+|------|----------|-----------|
+| 项目初始化 | 生成完整项目骨架、配置文件、依赖声明 | 确认技术选型，填充环境变量（数据库密码、API Key） |
+| 框架搭建 | 生成组件/服务/路由的样板代码 | 审查架构合理性，调整组件拆分粒度 |
+| 算法实现 | 按统一模式批量生成 Service 层代码 | 验证步骤划分的教学语义，确认 phase 标注正确 |
+| 前后端对接 | 同步更新 DTO/接口/渲染逻辑 | 确认字段映射无误，端到端测试 |
+| 部署配置 | 生成 Dockerfile、docker-compose、nginx.conf | 适配实际服务器环境，安全审计 |
+| Bug 修复 | 定位问题代码，提供修复方案 | 验证修复的正确性，回归测试 |
+
+**关键经验**：
+- **模式复用 > 逐段生成**：让 AI 先理解一种算法的完整实现模式，再批量应用到同类算法，效率远高于逐个算法从零生成
+- **类型系统是合约**：后端 Step 模型和前端接口定义构成前后端的数据合约，AI 能有效维护这份合约的一致性
+- **生成 + 审查 > 纯手工 > 纯自动**：AI 生成的代码经过人工审查后提交，既保持了开发速度，又保证了代码质量。
+- **环境配置一次性生成**：Docker、Nginx、CORS 等基础设施配置由 AI 根据最佳实践生成初版，人工只需适配实际部署环境
+
 ---
 
 ## 2. 需求分析
@@ -467,24 +504,28 @@ interface TestScenario {
 
 ### 4.7 3D 数据结构可视化
 
-采用分层架构：
+采用分层架构，将**静态渲染**和**交互动画**解耦为独立层：
 
 ```
-Vr3dVisualizerComponent (Angular 容器)
-  └── Three.js Scene (渲染管线)
-      ├── ThreeObjectFactory.ts     — 3D 对象工厂（立方体、球体、连接线）
-      ├── ArrayRenderer.ts          — 一维数组渲染
-      ├── StackRenderer.ts           — 栈（垂直堆叠）
-      ├── QueueRenderer.ts           — 队列（水平排列+出入动画）
-      ├── LinkedListRenderer.ts      — 链表（节点+箭头）
-      ├── BinaryTreeRenderer.ts      — 完全二叉树
-      └── BPlusTreeRenderer.ts       — B+ 树
+Vr3dVisualizerComponent (Angular 容器 — 管理 Three.js 场景生命周期)
+  │
+  ├── 渲染层 (Renderers/)               ├── 动画层 (Animators/)
+  │   ├── structure-renderer.types.ts   │   ├── structure-animator.interface.ts
+  │   ├── three-object-factory.ts       │   ├── basic-structure.animator.ts
+  │   ├── array.renderer.ts             │   └── b-plus-tree.animator.ts
+  │   ├── stack.renderer.ts             │
+  │   ├── queue.renderer.ts             ├── 数据层 (Data/)
+  │   ├── linked-list.renderer.ts       │   └── structure-info.ts
+  │   ├── binary-tree.renderer.ts       │
+  │   └── b-plus-tree.renderer.ts       │
+  └─────────────────────────────────────┘
 ```
 
-每个 Renderer 实现统一的 `StructureAnimator` 接口，负责：
-- 根据输入数据生成 3D 对象
-- 管理节点的增删改动画
-- 处理鼠标交互（旋转、缩放）
+**渲染层**：每个 Renderer 是静态类，暴露 `render(ctx: StructureRendererContext): void` 方法。调用 `ThreeObjectFactory`（统一工厂，生产立方体、球体、连接线、箭头等 3D 基元）将数据结构的逻辑状态转化为 Three.js `Object3D` 节点树，挂载到场景中。
+
+**动画层**：通过 `StructureAnimator` 接口与渲染层解耦。`BasicStructureAnimator` 覆盖数组、栈、队列、链表、二叉树五种线性/树形结构的操作动画（访问、插入、删除、搜索、遍历），`BPlusTreeAnimator` 独立处理 B+ 树的查找路径高亮、叶子分裂、借位合并和范围扫描动画。两者均通过 `AnimationContext` 获取场景引用、当前数据和状态更新回调，不直接依赖任何 Renderer。
+
+**鼠标交互**：通过 Three.js `OrbitControls` 统一处理旋转、缩放，不在单个 Renderer 或 Animator 中重复实现。
 
 **最近改进**（commit `37dc01c` + `c5dffb7`）：
 - **B+ 树动画器大幅扩展**：`b-plus-tree.animator.ts` 经历 820 行重构，支持查找（高亮路径）、插入（叶子分裂动画）、删除（借位/合并）、范围查询（链表顺序扫描）等完整操作演示
@@ -1331,6 +1372,7 @@ CREATE TABLE run_history (
 | `visualizers/vr-3d/renderers/b-plus-tree.renderer.ts` | B+ 树 3D 渲染器 |
 | `visualizers/vr-3d/renderers/structure-renderer.types.ts` | 3D 渲染器类型定义 |
 | `visualizers/vr-3d/animators/structure-animator.interface.ts` | 3D 动画器接口 |
+| `visualizers/vr-3d/animators/basic-structure.animator.ts` | 基础结构动画器（数组/栈/队列/链表/二叉树） |
 | `visualizers/vr-3d/animators/b-plus-tree.animator.ts` | B+ 树动画器 |
 | `visualizers/vr-3d/data/structure-info.ts` | 数据结构信息配置 |
 
