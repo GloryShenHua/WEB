@@ -31,7 +31,7 @@
 | 算法执行过程可视化 | 17 种算法的每一步状态变化通过柱状图、SVG 图形、DP 表格、棋盘等直观展示 |
 | 教学过程分解（Phase） | 每种算法的执行过程被划分为离散的教学阶段，以进度条形式向学习者展示"算法进行到哪一步了" |
 | 双算法对比模式 | 同时运行两个同分类算法，左右并排展示，实时对比步数、比较次数、操作次数 |
-| 评估测试系统 | 5 道算法理解题，覆盖 5 个分类，支持自动判分和解析展示 |
+| 评估测试系统 | LLM 动态生成题目（支持配置题数/分类/难度/题型）+ 经典固定 5 题降级方案，语义评测与个性化反馈 |
 | AI 复杂度分析 | 接入大语言模型，对用户自定义算法代码进行时间/空间复杂度分析 |
 | 3D 数据结构可视化 | 基于 Three.js 的 3D 渲染引擎，可视化数组、栈、队列、链表、二叉树、B+ 树 |
 | 用户认证系统 | 注册/登录功能，SHA-256 加盐哈希存储密码 |
@@ -106,11 +106,11 @@ AI 服务：并行智算云 DeepSeek-V3.2 (兼容 OpenAI 格式)
 - **FR3.3** 对比指标面板实时显示步数、比较次数、操作次数，绿色高亮表现更优的一方
 
 #### FR4: 评估测试
-- **FR4.1** 5 道理解题，覆盖 sorting、search、graph、dp 四个分类
-- **FR4.2** 支持多种题型：数值填空、状态填空、路径填空、表格填空
-- **FR4.3** 自动判分：简单题型前端直接比对，复杂题型调用后端 verify-step 端点获取标准答案
-- **FR4.4** 每题提交后显示正确/错误反馈和详细解析
-- **FR4.5** 完成后总分卡片展示（满分 5 分），支持重新测试
+- **FR4.1** 支持两种模式：AI 动态出题（LLM 生成题目 + 语义评测）和经典固定题（5 道预设题）
+- **FR4.2** AI 模式下支持配置：题目数量（1-15）、覆盖分类/算法、难度等级、题型偏好
+- **FR4.3** LLM 语义评测：理解等价表达（格式差异、不同表述），生成个性化反馈
+- **FR4.4** 答案交叉验证：对 state-fill/table-fill 题型运行实际算法获取 ground truth 并修正 LLM 答案
+- **FR4.5** 完成后总分卡片展示，支持返回设置重新测试
 
 #### FR5: AI 复杂度分析
 - **FR5.1** 用户输入任意语言的算法代码，选择关注的分析场景（最坏/平均/最好情况）
@@ -456,31 +456,41 @@ quickSort(input) {
 
 ### 4.4 评估测试系统
 
-**题目数据**：5 道题定义在 `frontend/src/app/data/test-scenarios.ts` 的 `TEST_SCENARIOS` 数组中，每道题包含：
+评估测试提供**两种模式**，通过设置面板切换。
 
-```typescript
-interface TestScenario {
-  id: number;           // 题目编号
-  title: string;        // 题目标题
-  category: AlgorithmCategory;  // 所属分类
-  algorithm: AlgorithmId;      // 具体算法
-  questionType: 'value-fill' | 'state-fill' | 'path-fill' | 'table-fill' | 'choice';
-  description: string;  // 题目描述
-  inputParams: Record<string, unknown>;  // 算法输入参数
-  answer: unknown;      // 标准答案
-  options?: string[];   // 选择题选项
-  explanation: string;  // 解析
-  targetStepIndex?: number;  // 后端验证取第几步
-  verifyField?: string;      // 后端验证取哪个字段
-}
-```
+#### 4.4.1 AI 动态出题模式（默认）
 
-**判分流程**：
+LLM 根据用户配置动态生成题目并语义评测答案。
+
+**出题流程**：
+1. 用户在设置面板配置参数（题数 1-15、分类/算法、难度、题型偏好）
+2. 前端 `POST /api/algorithms/assessment/generate` → 后端 `AssessmentService.generateQuestions()`
+3. `AssessmentService` 构造 Prompt 调用 LLM（DeepSeek-V3.2）生成题目 JSON
+4. 对 `state-fill`/`table-fill` 题型进行**交叉验证**：运行实际算法获取 ground truth，与 LLM 答案比对，不一致则修正
+5. 返回验证后的题目列表，前端逐题展示
+
+**评测流程**：
+1. 用户提交答案 → 前端 `POST /api/algorithms/assessment/evaluate`
+2. 后端 `AssessmentService.evaluateAnswer()` 将题目信息+用户答案发送给 LLM
+3. LLM 执行**语义等价判断**（理解 `[3,1,2]` 与 `3, 1, 2` 等价），生成个性化反馈
+4. 返回 `{ correct, feedback, correctAnswer, confidence }`
+
+**LLM 安全调控**：5 层防护（System Prompt 行为准则 → User Prompt 输出约束 → JSON 提取剥离 Markdown → 字段格式校验 → 内容合规检查），确保不输出无关内容。
+
+**配置方式**：通过操作系统环境变量 `AI_ASSESSMENT_API_KEY` 注入。Spring Boot 原生读取环境变量，无需额外文件或插件。在 IDE 的 Run Configuration 中设置，或启动时 `export AI_ASSESSMENT_API_KEY=你的密钥`。
+
+#### 4.4.2 经典固定题模式（降级方案）
+
+保留原有的 5 道固定题目，在 LLM API 不可用时自动切换。
+
+**题目数据**：定义在 `frontend/src/app/data/test-scenarios.ts` 的 `TEST_SCENARIOS` 数组中。
+
+**判分方式**：
 - `value-fill` / `choice` → 前端直接比对，字符串标准化后比较
 - `state-fill` / `table-fill` → 调用 `POST /api/algorithms/verify-step` 获取标准答案后比对
 - `path-fill` → 标准化空白后比较路径字符串
 
-**后端 `verify-step` 端点**：接收 `{ algorithm, params, targetStepIndex }`，运行为该算法，返回指定索引位置的步骤数据。
+> **详细实现**：参见 `docs/assessment-llm-implementation.md`
 
 ### 4.5 AI 复杂度分析
 
@@ -930,17 +940,26 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 
 ### 6.7 评估测试
 
-1. 点击顶部导航栏"📝 评估测试" Tab
-2. 进入测试界面，顶部显示 5 个进度圆点，当前题目高亮
-3. 阅读题目描述和输入参数
-4. 在输入框中键入答案
-5. 点击"✓ 提交答案"
-6. 系统自动判分，显示正确/错误反馈和详细解析
-7. 可使用"上一题"/"下一题"按钮或点击进度圆点导航
-8. 完成全部 5 题后显示总分卡片和评价
-9. 点击"重新测试"可重新作答
+评估测试提供**两种模式**：
 
-**5 道测试题概览**：
+#### AI 动态出题模式（需配置 API Key）
+
+1. 点击顶部导航栏"📝 评估测试" Tab，进入设置页面
+2. 配置参数：题目数量（1-15）、难度等级、覆盖分类、题型偏好
+3. 选择"AI 动态出题"模式，点击"开始 AI 出题"
+4. 等待 5-15 秒题目生成
+5. 逐题作答，每题点击"✓ 提交答案"后由 AI 评测（2-5 秒）
+6. 查看 AI 生成的个性化反馈和解析
+7. 完成全部题目后显示总分卡片，点击"返回设置"可重新测试
+
+#### 经典固定题模式（无需 API）
+
+1. 点击顶部导航栏"📝 评估测试" Tab，进入设置页面
+2. 选择"经典固定题"模式，点击"开始答题"
+3. 逐题作答（共 5 道预设题目），系统自动判分
+4. 完成全部 5 题后显示总分卡片，点击"返回设置"
+
+**预设 5 道测试题概览**：
 
 | # | 标题 | 分类 | 核心考察点 |
 |---|------|------|-----------|
@@ -949,6 +968,8 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 | 3 | 二分查找过程分析 | search | mid 计算和边界收缩逻辑 |
 | 4 | Dijkstra 最短路径 | graph | 贪心策略下的最短路径手动计算 |
 | 5 | 0/1 背包 DP 计算 | dp | DP 状态转移和 dp[i][w] 值推算 |
+
+> **注意**：AI 动态出题需要配置 `AI_ASSESSMENT_API_KEY` 环境变量，详见 `docs/assessment-llm-implementation.md`。
 
 ### 6.8 AI 复杂度分析
 
@@ -1125,7 +1146,79 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 }
 ```
 
-### 7.3 AI 分析端点
+### 7.3 评估测试端点（LLM 增强）
+
+#### POST /api/algorithms/assessment/generate
+
+使用 LLM 动态生成算法测试题。
+
+**请求体**：
+```json
+{
+  "questionCount": 5,
+  "categories": ["sorting", "search"],
+  "algorithms": ["quick-sort", "binary-search"],
+  "difficulty": "medium",
+  "mode": "ai",
+  "questionTypes": ["fill", "choice"]
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| questionCount | int | 否 | 题目数量（1-15），默认 5 |
+| categories | string[] | 否 | 覆盖分类，空=全部 |
+| algorithms | string[] | 否 | 指定算法列表，空=由分类决定 |
+| difficulty | string | 否 | easy / medium / hard / mixed，默认 medium |
+| mode | string | 否 | "ai"（LLM出题）或 "fixed"（固定题） |
+| questionTypes | string[] | 否 | fill / choice / short-answer，空=全部 |
+
+**响应**（200 OK）：
+```json
+[
+  {
+    "id": 1,
+    "title": "快速排序分区过程",
+    "category": "sorting",
+    "algorithm": "quick-sort",
+    "questionType": "state-fill",
+    "description": "对数组 [8, 3, 1, 6, 2, 5] 执行快速排序...",
+    "inputParams": { "array": [8, 3, 1, 6, 2, 5] },
+    "answer": { "array": [3, 1, 2, 5, 8, 6] },
+    "options": null,
+    "explanation": "以 5 为基准，比 5 小的移到左边...",
+    "targetStepIndex": 10,
+    "verifyField": "array",
+    "validated": true
+  }
+]
+```
+
+**错误**（503）：`{"error": "AI 评估服务未配置 API Key，请使用固定题目模式"}`
+
+#### POST /api/algorithms/assessment/evaluate
+
+使用 LLM 评测用户答案。
+
+**请求体**：
+```json
+{
+  "question": { ... },
+  "userAnswer": "[3, 1, 2, 5, 8, 6]"
+}
+```
+
+**响应**（200 OK）：
+```json
+{
+  "correct": true,
+  "feedback": "回答正确！数组状态 [3,1,2,5,8,6] 与标准答案一致...",
+  "correctAnswer": "第一次分区后数组为 [3, 1, 2, 5, 8, 6]",
+  "confidence": 0.95
+}
+```
+
+### 7.4 AI 分析端点
 
 #### POST /api/algorithms/algorithm-complexity
 
@@ -1154,7 +1247,7 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 }
 ```
 
-### 7.4 历史记录端点
+### 7.5 历史记录端点
 
 #### GET /api/algorithms/history
 
@@ -1181,7 +1274,7 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 
 删除单条历史记录。返回 204 No Content。
 
-### 7.5 健康检查
+### 7.6 健康检查
 
 #### GET /api/algorithms/health
 
@@ -1189,7 +1282,7 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 { "status": "ok", "service": "Algorithm Viz Backend" }
 ```
 
-### 7.6 认证端点
+### 7.7 认证端点
 
 #### POST /api/auth/register
 
@@ -1213,7 +1306,7 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 { "id": 1, "username": "alice", "displayName": "Alice" }
 ```
 
-### 7.7 错误响应
+### 7.8 错误响应
 
 所有端点遵循统一的错误格式：
 
@@ -1312,6 +1405,7 @@ CREATE TABLE run_history (
 | `service/BacktrackingService.java` | N 皇后回溯步骤生成 |
 | `service/DivideConquerService.java` | Karatsuba 大整数乘法步骤生成 |
 | `service/AlgorithmComplexityService.java` | AI 大模型复杂度分析服务 |
+| `service/AssessmentService.java` | LLM 评估服务：动态出题 + 语义评测 + 交叉验证（独立于 AlgorithmComplexityService） |
 | `service/AuthService.java` | 用户认证服务（注册/登录 + SHA-256 加盐哈希） |
 | `model/SortStep.java` | 排序步骤模型（含 Builder、phase） |
 | `model/SearchStep.java` | 搜索步骤模型（含 Builder、phase） |
@@ -1320,6 +1414,8 @@ CREATE TABLE run_history (
 | `model/NQueensStep.java` | N 皇后步骤模型（含 Builder、phase） |
 | `model/DivideConquerStep.java` | 分治步骤模型（含 Builder、phase、内嵌 TreeNode） |
 | `model/AlgorithmComplexityAnalysis.java` | AI 分析结果模型（含 Builder） |
+| `model/AssessmentQuestion.java` | LLM 生成的评估题目模型（含 Builder） |
+| `model/AnswerEvaluationResponse.java` | LLM 评测结果模型（含 Builder） |
 | `entity/RunHistory.java` | 运行历史 JPA 实体 |
 | `entity/AppUser.java` | 用户 JPA 实体 |
 | `dto/SortRequest.java` | 排序请求 DTO |
@@ -1329,6 +1425,8 @@ CREATE TABLE run_history (
 | `dto/BacktrackingRequest.java` | 回溯请求 DTO |
 | `dto/DivideConquerRequest.java` | 分治请求 DTO |
 | `dto/AlgorithmComplexityRequest.java` | AI 分析请求 DTO |
+| `dto/AssessmentConfigRequest.java` | 评估配置请求 DTO（题数/分类/难度/题型） |
+| `dto/AnswerEvaluationRequest.java` | 评测请求 DTO |
 | `dto/AuthRequest.java` | 登录请求 DTO |
 | `dto/AuthResponse.java` | 认证响应 DTO |
 | `dto/RegisterRequest.java` | 注册请求 DTO |
@@ -1348,14 +1446,16 @@ CREATE TABLE run_history (
 | `services/algorithm.service.ts` | 后端 API HTTP 客户端 |
 | `services/auth.service.ts` | 认证 API HTTP 客户端 |
 | `models/algorithm.models.ts` | TypeScript 类型定义（16 个接口 + 类型别名） |
-| `data/test-scenarios.ts` | 5 道评估测试题数据 |
+| `data/test-scenarios.ts` | 5 道经典固定评估测试题数据 |
 | `components/sidebar/sidebar.component.ts` | 侧边栏：算法选择列表、对比模式开关 |
 | `components/control-panel/control-panel.component.ts` | 播放控制栏 |
 | `components/input-config/input-config.component.ts` | 输入数据编辑面板 |
 | `components/phase-guide/phase-guide.component.ts` | 教学阶段进度条 |
 | `components/complexity-panel/complexity-panel.component.ts` | 复杂度信息卡片 |
 | `components/history-panel/history-panel.component.ts` | 运行历史面板 |
-| `components/assessment/assessment.component.ts` | 评估测试组件：答题/判分/导航/总分 |
+| `components/assessment-container/assessment-container.component.ts` | 评估测试容器：管理设置/答题阶段 |
+| `components/assessment-container/assessment-settings/assessment-settings.component.ts` | 评估配置面板：题数/分类/难度/题型 |
+| `components/assessment/assessment.component.ts` | 评估答题组件：动态题目+AI评测+固定题降级 |
 | `components/auth/auth.component.ts` | 登录/注册表单 |
 | `components/ai-complexity-dialog/ai-complexity-dialog.component.ts` | AI 复杂度分析弹窗 |
 | `visualizers/sorting/sorting-visualizer.component.ts` | 排序可视化器（柱状图/Canvas） |
@@ -1393,6 +1493,8 @@ CREATE TABLE run_history (
 | `frontend/src/assets/login-bg.png` | 登录页背景图（约 1.7MB，全屏覆盖 + 渐变遮罩） |
 | `docs/learning-guidance-system.md` | 学习引导系统独立设计文档 |
 | `docs/comprehensive-project-documentation.md` | 本文档（项目分析、设计、实现、部署、使用全貌） |
+| `docs/assessment-llm-enhancement-plan.md` | 评估测试 LLM 增强改造方案 |
+| `docs/assessment-llm-implementation.md` | 评估测试 LLM 增强实现文档（含使用方法） |
 | `docs/部署文档.md` | AWS ECS Docker 部署专项文档 |
 | `CLAUDE.md` | Claude Code 项目指引文件 |
 

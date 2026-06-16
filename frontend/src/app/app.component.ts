@@ -16,7 +16,7 @@ import { DpVisualizerComponent } from './visualizers/dp/dp-visualizer.component'
 import { NQueensVisualizerComponent } from './visualizers/n-queens/n-queens-visualizer.component';
 import { DivideConquerVisualizerComponent } from './visualizers/divide-conquer/divide-conquer-visualizer.component';
 import { HistoryPanelComponent } from './components/history-panel/history-panel.component';
-import { AssessmentComponent } from './components/assessment/assessment.component';
+import { AssessmentContainerComponent } from './components/assessment-container/assessment-container.component';
 import { Vr3dVisualizerComponent } from './visualizers/vr-3d/vr-3d-visualizer.component';
 import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/ai-complexity-dialog.component';
 
@@ -39,7 +39,7 @@ import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/a
     NQueensVisualizerComponent,
     DivideConquerVisualizerComponent,
     HistoryPanelComponent,
-    AssessmentComponent,
+    AssessmentContainerComponent,
     Vr3dVisualizerComponent,
     AiComplexityDialogComponent,
   ],

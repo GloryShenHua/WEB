@@ -6,6 +6,8 @@ import {
   AnyStep,
   GraphData,
   KnapsackItem,
+  AssessmentConfig,
+  AssessmentQuestion,
 } from '../models/algorithm.models';
 import {
   CustomStructureData,
@@ -254,6 +256,11 @@ export class AlgorithmStore {
   compareIsPlaying = signal(false);
   compareIsLoading = signal(false);
   compareError = signal<string | null>(null);
+
+  // Assessment config
+  assessmentConfig = signal<AssessmentConfig | null>(null);
+  assessmentQuestions = signal<AssessmentQuestion[]>([]);
+  overallFeedback = signal('');
 
   currentStepData = computed(() => this.steps()[this.currentStep()] ?? null);
   totalSteps = computed(() => this.steps().length);

@@ -67,7 +67,7 @@
       <app-history-panel *ngIf="store.activePanel() === 'history'" />
 
       <!-- Assessment Panel -->
-      <app-assessment *ngIf="store.activePanel() === 'assessment'" />
+      <app-assessment-container *ngIf="store.activePanel() === 'assessment'" />
 
       <!-- Visualizer -->
       <ng-container *ngIf="store.activePanel() === 'visualizer'">

@@ -1,5 +1,17 @@
 <div class="flex-1 flex flex-col overflow-auto p-6">
 
+  <!-- Generating spinner -->
+  @if (isGenerating) {
+    <div class="max-w-2xl mx-auto w-full text-center py-20">
+      <div class="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-400">AI 正在生成题目...</p>
+      <p class="text-xs text-slate-600 mt-1">通常需要 5-15 秒</p>
+    </div>
+  }
+
+  <!-- Main content -->
+  @if (!isGenerating) {
+
   <!-- Header with progress -->
   <div class="max-w-2xl mx-auto w-full mb-6">
     <div class="flex items-center justify-between mb-3">
@@ -22,7 +34,7 @@
     <!-- Progress dots -->
     <div class="flex justify-between mt-2">
       <button
-        *ngFor="let s of scenarios; let i = index"
+        *ngFor="let s of questions; let i = index"
         (click)="currentIndex.set(i); isSubmitted.set(false); userInput.set('')"
         class="w-8 h-8 rounded-full text-xs font-bold transition-all flex items-center justify-center"
         [ngClass]="i === currentIndex()
@@ -54,9 +66,9 @@
             : '多练习几次，你会更好的！' }}
       </p>
       <button
-        (click)="restart()"
+        (click)="restartTest()"
         class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-sm font-medium">
-        重新测试
+        返回设置
       </button>
     </div>
   </div>
@@ -86,19 +98,32 @@
 
       <!-- Answer input area -->
       <div *ngIf="!isSubmitted() || !currentResult()" class="mb-4">
-        <label class="block text-xs text-slate-400 mb-2">你的答案：</label>
-        <textarea
-          [(ngModel)]="userInput"
-          rows="3"
-          class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none resize-none"
-          [placeholder]="placeholderText()">
-        </textarea>
+        <!-- Choice: show clickable option buttons -->
+        <div [hidden]="!isChoiceType(scenario)">
+          <app-assessment-choice
+            [question]="scenario"
+            [selected]="userInput()"
+            (selectedChange)="selectOption($event)">
+          </app-assessment-choice>
+        </div>
+
+        <!-- Fill / Short-answer: show textarea -->
+        <div [hidden]="isChoiceType(scenario)">
+          <label class="block text-xs text-slate-400 mb-2">你的答案：</label>
+          <textarea
+            [(ngModel)]="userInput"
+            [rows]="isShortAnswerType(scenario) ? 5 : 3"
+            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none resize-none"
+            [placeholder]="placeholderText()">
+          </textarea>
+        </div>
+
         <button
           (click)="submitAnswer()"
-          [disabled]="!userInput().trim() || isVerifying()"
+          [disabled]="!userInput().trim() || isVerifying() || isEvaluating()"
           class="mt-3 px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-sm font-medium flex items-center gap-1.5">
-          <span *ngIf="isVerifying()" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-          {{ isVerifying() ? '验证中...' : '✓ 提交答案' }}
+          <span *ngIf="isVerifying() || isEvaluating()" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          {{ isVerifying() ? '验证中...' : isEvaluating() ? 'AI 评测中...' : '✓ 提交答案' }}
         </button>
       </div>
 
@@ -148,4 +173,5 @@
       </div>
     </div>
   </div>
+  }
 </div>
