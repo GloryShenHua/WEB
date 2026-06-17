@@ -24,3 +24,9 @@ export interface StructureRendererContext {
   addObject: (obj: THREE.Object3D) => void;
   data: CustomStructureData;
 }
+
+export interface StructureOperation {
+  name: string;
+  complexity: string;
+  description: string;
+}

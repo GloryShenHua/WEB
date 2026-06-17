@@ -25,6 +25,7 @@ public class AlgorithmController {
     private final BacktrackingService backtrackingService;
     private final DivideConquerService divideConquerService;
     private final AlgorithmComplexityService algorithmComplexityService;
+    private final AssessmentService assessmentService;
     private final RunHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
 
@@ -32,6 +33,7 @@ public class AlgorithmController {
             GraphService graphService, DPService dpService, BacktrackingService backtrackingService,
             DivideConquerService divideConquerService,
             AlgorithmComplexityService algorithmComplexityService,
+            AssessmentService assessmentService,
             RunHistoryRepository historyRepository, ObjectMapper objectMapper) {
         this.sortingService = sortingService;
         this.searchService = searchService;
@@ -40,6 +42,7 @@ public class AlgorithmController {
         this.backtrackingService = backtrackingService;
         this.divideConquerService = divideConquerService;
         this.algorithmComplexityService = algorithmComplexityService;
+        this.assessmentService = assessmentService;
         this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
     }
@@ -221,6 +224,45 @@ public class AlgorithmController {
         result.put("category", category);
         result.put("targetStepIndex", targetStepIndex);
         result.put("stepData", stepData);
+        return ResponseEntity.ok(result);
+    }
+
+    // ==================== ASSESSMENT (LLM-ENHANCED) ====================
+    @PostMapping("/assessment/generate")
+    public ResponseEntity<?> generateAssessment(@RequestBody AssessmentConfigRequest config) {
+        try {
+            List<AssessmentQuestion> questions = assessmentService.generateQuestions(config);
+            return ResponseEntity.ok(questions);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(503).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "题目生成失败：" + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/assessment/evaluate")
+    public ResponseEntity<?> evaluateAnswer(@Valid @RequestBody AnswerEvaluationRequest request) {
+        try {
+            AnswerEvaluationResponse result = assessmentService.evaluateAnswer(
+                    request.getQuestion(), request.getUserAnswer());
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(503).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "评测失败：" + e.getMessage()));
+        }
+    }
+
+    // ==================== ASSESSMENT HEALTH ====================
+    @GetMapping("/assessment/health")
+    public ResponseEntity<Map<String, Object>> assessmentHealth() {
+        boolean configured = assessmentService.isApiKeyConfigured();
+        Map<String, Object> result = new HashMap<>();
+        result.put("aiAvailable", configured);
+        result.put("mode", configured ? "ai + fixed" : "fixed only");
+        result.put("message", configured
+                ? "AI assessment is ready"
+                : "AI API key not configured — only fixed-question mode is available");
         return ResponseEntity.ok(result);
     }
 

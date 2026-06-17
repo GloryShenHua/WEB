@@ -256,3 +256,43 @@ export interface TestScenario {
   targetStepIndex?: number;
   verifyField?: string;
 }
+
+// ===================== LLM ASSESSMENT =====================
+
+/** 用户友好的题型名称 */
+export type UserQuestionType = 'fill' | 'choice' | 'short-answer';
+
+/** 评估测试配置（用户在设置面板中选择） */
+export interface AssessmentConfig {
+  questionCount: number;
+  categories: AlgorithmCategory[];
+  algorithms: AlgorithmId[];
+  difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
+  mode: 'ai' | 'fixed';
+  questionTypes: UserQuestionType[];
+}
+
+/** LLM 生成的评估题目 */
+export interface AssessmentQuestion {
+  id: number;
+  title: string;
+  category: AlgorithmCategory;
+  algorithm: AlgorithmId;
+  questionType: QuestionType;
+  description: string;
+  inputParams: Record<string, unknown>;
+  answer: unknown;
+  options?: string[];
+  explanation: string;
+  targetStepIndex?: number;
+  verifyField?: string;
+  validated?: boolean;
+}
+
+/** LLM 评测结果 */
+export interface AnswerEvaluationResponse {
+  correct: boolean;
+  feedback: string;
+  correctAnswer: string;
+  confidence: number;
+}

@@ -8,6 +8,12 @@ export class ArrayRenderer {
 
         values.forEach((value, i) => {
             const cube = ThreeObjectFactory.createBox(String(value), 0x2563eb);
+            cube.userData = {
+                structureType: 'array',
+                value: String(value),
+                index: i,
+                originalColor: 0x2563eb,
+            };
             cube.position.set((i - center) * 2, 1, 0);
             ctx.addObject(cube);
         });

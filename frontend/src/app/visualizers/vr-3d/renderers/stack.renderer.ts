@@ -6,10 +6,18 @@ export class StackRenderer {
         const values = ctx.data.values.length > 0 ? ctx.data.values : ['10', '20', '30', '40', '50'];
 
         values.forEach((value, i) => {
+            const color = i === values.length - 1 ? 0xfacc15 : 0x22c55e;
             const cube = ThreeObjectFactory.createBox(
                 String(value),
-                i === values.length - 1 ? 0xfacc15 : 0x22c55e
+                color
             );
+            cube.userData = {
+                structureType: 'stack',
+                value: String(value),
+                index: i,
+                isTop: i === values.length - 1,
+                originalColor: color,
+            };
             cube.position.set(0, i + 0.6, 0);
             ctx.addObject(cube);
         });

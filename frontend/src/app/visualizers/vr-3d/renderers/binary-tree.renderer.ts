@@ -31,7 +31,7 @@ export class BinaryTreeRenderer {
                 z,
                 index,
             };
-        });
+        }).filter(node => node.v != null && node.v !== '');
 
         nodes.forEach(node => {
             if (node.index === 0) {
@@ -39,7 +39,7 @@ export class BinaryTreeRenderer {
             }
 
             const parentIndex = Math.floor((node.index - 1) / 2);
-            const parent = nodes[parentIndex];
+            const parent = nodes.find(item => item.index === parentIndex);
 
             if (!parent) {
                 return;
@@ -56,6 +56,12 @@ export class BinaryTreeRenderer {
 
         nodes.forEach(node => {
             const sphere = ThreeObjectFactory.createSphere(node.v, 0xa855f7);
+            sphere.userData = {
+                structureType: 'binary-tree',
+                value: String(node.v),
+                index: node.index,
+                originalColor: 0xa855f7,
+            };
             sphere.position.set(node.x, node.y, node.z);
             ctx.addObject(sphere);
         });

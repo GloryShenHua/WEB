@@ -21,6 +21,12 @@ import { BPlusTreeRenderer } from './renderers/b-plus-tree.renderer';
 import { AlgorithmStore } from '../../store/algorithm.store';
 import { BPlusTreeAnimator } from './animators/b-plus-tree.animator';
 import { StructureAnimator, AnimationContext } from './animators/structure-animator.interface';
+import { BasicStructureAnimator } from './animators/basic-structure.animator';
+
+interface StructureOption {
+    type: StructureType;
+    label: string;
+}
 
 @Component({
     selector: 'app-vr-3d-visualizer',
@@ -33,6 +39,15 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     canvasContainer!: ElementRef<HTMLDivElement>;
 
     selected = computed(() => this.store.vr3dStructure());
+    operationStatus = '选择一个结构操作，系统会在 3D 场景中高亮关键步骤。';
+    readonly structureOptions: StructureOption[] = [
+        { type: 'array', label: '数组' },
+        { type: 'stack', label: '栈' },
+        { type: 'queue', label: '队列' },
+        { type: 'linked-list', label: '链表' },
+        { type: 'binary-tree', label: '二叉树' },
+        { type: 'b-plus-tree', label: 'B+ 树' },
+    ];
 
     private scene!: THREE.Scene;
     private camera!: THREE.PerspectiveCamera;
@@ -41,6 +56,7 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     private animationId: number | null = null;
     private objects: THREE.Object3D[] = [];
     private threeReady = false;
+    //private currentAnimator: StructureAnimator | null = null;
     private isAnimating = false;
     private tempObjects: THREE.Object3D[] = [];
 
@@ -83,6 +99,20 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    selectStructure(type: StructureType): void {
+        this.store.setVr3dStructure(type);
+        this.operationStatus = '已切换结构，可以运行操作动画。';
+    }
+
+    randomData(): void {
+        this.store.randomVr3dData();
+        this.operationStatus = '已生成一组新的数据。';
+    }
+
+    resetView(): void {
+        this.resetCameraView();
+        this.operationStatus = '视角已重置。';
+    }
 
     private initThree(): void {
         const container = this.canvasContainer.nativeElement;
@@ -212,9 +242,13 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
     private animatorsMap = new Map<StructureType, StructureAnimator>();
 
     private initAnimators(): void {
-        // 注册数据结构对应的动画器
+        const basicAnimator = new BasicStructureAnimator();
+        this.animatorsMap.set('array', basicAnimator);
+        this.animatorsMap.set('stack', basicAnimator);
+        this.animatorsMap.set('queue', basicAnimator);
+        this.animatorsMap.set('linked-list', basicAnimator);
+        this.animatorsMap.set('binary-tree', basicAnimator);
         this.animatorsMap.set('b-plus-tree', new BPlusTreeAnimator());
-        // 后续可添加 array, stack 等的动画器
     }
 
     async onOperate(operationName: string): Promise<void> {
@@ -229,14 +263,16 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
         }
 
         this.isAnimating = true;
-        // 临时禁用轨道控制
-        this.controls.enabled = false;
+        this.operationStatus = `正在演示：${operationName}`;
+        // 不再禁用轨道控制，允许用户在动画时拖拽/缩放
+        // this.controls.enabled = false;
 
         try {
             const ctx: AnimationContext = {
                 scene: this.scene,
                 camera: this.camera,
                 controls: this.controls,
+                structureType: this.selected(),
                 addTemporaryObject: (obj) => {
                     this.tempObjects.push(obj);
                     this.scene.add(obj);
@@ -251,14 +287,18 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
                     // 等待下一个渲染周期重新绘制结构
                     setTimeout(() => this.renderStructure(), 100);
                 },
-                structureType: this.selected(),
+                announce: (message) => {
+                    this.operationStatus = message;
+                },
             };
             await animator.performOperation(operationName, ctx);
         } catch (err) {
             console.error(err);
+            this.operationStatus = '操作演示失败，请查看控制台错误。';
         } finally {
             this.isAnimating = false;
-            this.controls.enabled = true;
+            // 不再在结束时恢复（因为未禁用）
+            // this.controls.enabled = true;
             this.clearTemporaryObjects();
         }
     }
@@ -270,6 +310,6 @@ export class Vr3dVisualizerComponent implements AfterViewInit, OnDestroy {
 
     // 添加公共方法供模板调用
     performOperation(opName: string): void {
-       void this.onOperate(opName);
+        this.onOperate(opName).then(r => {});
     }
 }

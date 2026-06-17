@@ -1,38 +1,31 @@
-<div class="min-h-screen bg-slate-950 text-white flex">
-  <section class="hidden lg:flex w-[46%] bg-slate-900 border-r border-slate-800 px-12 py-10 flex-col justify-between">
+<div class="relative min-h-screen overflow-hidden bg-slate-950 text-white flex">
+  <img
+    src="assets/login-bg.png"
+    alt="背景"
+    class="absolute inset-0 h-full w-full object-cover">
+  <div class="absolute inset-0 bg-slate-950/55"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/35 to-slate-950/80"></div>
+
+  <section class="relative z-10 hidden lg:flex w-[46%] px-12 py-10 flex-col justify-between">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-xl font-bold">A</div>
       <div>
-        <h1 class="text-lg font-bold leading-none">算法可视化学习平台</h1>
-        <p class="text-xs text-slate-500 mt-1">Algorithm Visualization</p>
+        <h1 class="text-lg font-bold leading-none drop-shadow">算法可视化学习平台</h1>
+        <p class="text-xs text-slate-300 mt-1">Algorithm Visualization</p>
       </div>
     </div>
 
-    <div class="max-w-md">
-      <p class="text-sm text-blue-400 font-semibold mb-3">学习、演示、复盘</p>
-      <h2 class="text-4xl font-bold leading-tight">用可视化步骤理解算法的每一次决策。</h2>
-      <p class="text-sm text-slate-400 leading-6 mt-5">
-        登录后进入排序、搜索、图算法、动态规划和回溯算法的统一实验环境，保留你的本地访问状态。
-      </p>
+    <div class="max-w-2xl">
+      <h2 class="text-7xl font-bold leading-tight drop-shadow-lg">算法可视化学习平台</h2>
+      
     </div>
 
     <div class="grid grid-cols-3 gap-3 text-xs">
-      <div class="border border-slate-700 bg-slate-800/70 rounded-lg p-3">
-        <div class="text-slate-400">算法类别</div>
-        <div class="text-2xl font-bold mt-1">5</div>
-      </div>
-      <div class="border border-slate-700 bg-slate-800/70 rounded-lg p-3">
-        <div class="text-slate-400">图编辑</div>
-        <div class="text-2xl font-bold mt-1">实时</div>
-      </div>
-      <div class="border border-slate-700 bg-slate-800/70 rounded-lg p-3">
-        <div class="text-slate-400">运行记录</div>
-        <div class="text-2xl font-bold mt-1">可查</div>
-      </div>
+      
     </div>
   </section>
 
-  <main class="flex-1 flex items-center justify-center px-5 py-8">
+  <main class="relative z-10 flex-1 flex items-center justify-center px-5 py-8">
     <div class="w-full max-w-md">
       <div class="lg:hidden flex items-center gap-3 mb-8">
         <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-xl font-bold">A</div>
@@ -42,7 +35,7 @@
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-700 rounded-lg p-6 shadow-xl shadow-black/20">
+      <div class="bg-slate-900/90 border border-slate-700 rounded-lg p-6 shadow-xl shadow-black/30 backdrop-blur">
         <div class="flex bg-slate-800 rounded-lg p-1 mb-6">
           <button
             type="button"
