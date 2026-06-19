@@ -139,7 +139,7 @@ export class AiComplexityDialogComponent implements OnInit {
           this.sessions.unshift(session);
           this.executeAnalysis(code);
         },
-        error: (err) => {
+        error: () => {
           this.algorithmError = '创建会话失败';
         }
       });
