@@ -1,5 +1,6 @@
 package com.algorithmviz.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -10,11 +11,16 @@ import java.util.List;
 
 @Configuration
 public class CorsConfig {
+    private final String allowedOrigin;
+
+    public CorsConfig(@Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
+        this.allowedOrigin = allowedOrigin;
+    }
 
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedOrigins(List.of(allowedOrigin));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

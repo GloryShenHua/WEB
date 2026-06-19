@@ -232,7 +232,7 @@ export class AlgorithmStore {
   speed = signal(500);
   isLoading = signal(false);
   error = signal<string | null>(null);
-  activePanel = signal<'visualizer' | 'history' | 'assessment'>('visualizer');
+  activePanel = signal<'visualizer' | 'history' | 'assessment' | 'competition'>('visualizer');
   aiDialogOpen = signal(false);
 
   sortArray = signal<number[]>([64, 34, 25, 12, 22, 11, 90]);
@@ -565,7 +565,7 @@ export class AlgorithmStore {
     return Array.from({ length: values.length }, (_, index) => values[index] ?? '');
   }
 
-  setActivePanel(p: 'visualizer' | 'history' | 'assessment'): void {
+  setActivePanel(p: 'visualizer' | 'history' | 'assessment' | 'competition'): void {
     this.activePanel.set(p);
   }
 

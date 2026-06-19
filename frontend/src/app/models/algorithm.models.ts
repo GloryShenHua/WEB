@@ -236,7 +236,7 @@ export interface AppState {
   divideX: string;
   divideY: string;
 
-  activePanel: 'visualizer' | 'history' | 'assessment';
+  activePanel: 'visualizer' | 'history' | 'assessment' | 'competition';
 }
 
 // ===================== TEST SCENARIOS =====================

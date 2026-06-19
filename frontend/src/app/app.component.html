@@ -41,7 +41,7 @@
       </div>
 
       <button
-        (click)="auth.logout()"
+        (click)="logout()"
         class="px-2.5 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800">
         退出
       </button>
@@ -58,7 +58,7 @@
   <div class="flex flex-1 overflow-hidden">
 
     <!-- Sidebar -->
-    <app-sidebar *ngIf="store.activePanel() === 'visualizer'" />
+    <app-sidebar *ngIf="store.activePanel() === 'visualizer' || store.activePanel() === 'competition'" />
 
     <!-- Content -->
     <main class="flex-1 flex flex-col overflow-hidden">
@@ -68,6 +68,9 @@
 
       <!-- Assessment Panel -->
       <app-assessment-container *ngIf="store.activePanel() === 'assessment'" />
+
+      <!-- Competition Panel -->
+      <app-competition *ngIf="store.activePanel() === 'competition'" />
 
       <!-- Visualizer -->
       <ng-container *ngIf="store.activePanel() === 'visualizer'">

@@ -1,6 +1,6 @@
 # 算法与复杂度可视化学习平台 — 项目综合文档
 
-> 版本 1.1.0 | 2026-06-09 | Angular 17 + Spring Boot 3.2 + MySQL + Docker + AWS ECS
+> 版本 1.2.0 | 2026-06-19 | Angular 17 + Spring Boot 3.2 + WebRTC + MySQL + Docker + AWS ECS
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 1.1 项目定位
 
-算法与复杂度可视化学习平台（Algorithm Visualization Learning Platform）是一个交互式 Web 应用，通过**分步可视化**的方式展示经典算法的执行过程。平台覆盖排序、搜索、图遍历、动态规划、回溯、分治六大类共 17 种算法，并提供**教学阶段引导**、**对比模式**、**评估测试**和 **AI 复杂度分析**等教学辅助功能，将传统"看见结果"的可视化工具升级为"看见过程"的学习平台。
+算法与复杂度可视化学习平台（Algorithm Visualization Learning Platform）是一个交互式 Web 应用，通过**分步可视化**的方式展示经典算法的执行过程。平台覆盖排序、搜索、图遍历、动态规划、回溯、分治六大类共 17 种算法，并提供**教学阶段引导**、**对比模式**、**评估测试**、**AI 复杂度分析**和 **WebRTC 算法 1v1 竞赛**等教学辅助功能，将传统"看见结果"的可视化工具升级为"看见过程、即时练习、实时对战"的学习平台。
 
 ### 1.2 核心能力
 
@@ -32,6 +32,7 @@
 | 教学过程分解（Phase） | 每种算法的执行过程被划分为离散的教学阶段，以进度条形式向学习者展示"算法进行到哪一步了" |
 | 双算法对比模式 | 同时运行两个同分类算法，左右并排展示，实时对比步数、比较次数、操作次数 |
 | 评估测试系统 | LLM 动态生成题目（支持配置题数/分类/难度/题型）+ 经典固定 5 题降级方案，语义评测与个性化反馈 |
+| 算法 1v1 竞赛 | 每种算法提供对应竞赛题库；用户创建或加入 6 位房间，双方准备后通过 WebRTC DataChannel 实时同步进度和聊天，由后端统一判分 |
 | AI 复杂度分析 | 接入大语言模型，对用户自定义算法代码进行时间/空间复杂度分析 |
 | 3D 数据结构可视化 | 基于 Three.js 的 3D 渲染引擎，可视化数组、栈、队列、链表、二叉树、B+ 树 |
 | 用户认证系统 | 注册/登录功能，SHA-256 加盐哈希存储密码 |
@@ -41,9 +42,10 @@
 
 ```
 前端：Angular 17 (Standalone Components) + TypeScript 5.4 + Tailwind CSS 3.4 + Three.js 0.184
-后端：Spring Boot 3.2.3 + Java 17 + Spring Data JPA + MySQL Connector
+后端：Spring Boot 3.2.3 + Java 17 + Spring WebSocket + Spring Data JPA + MySQL Connector
 数据库：MySQL 8.0
 AI 服务：并行智算云 DeepSeek-V3.2 (兼容 OpenAI 格式)
+实时通信：WebRTC DataChannel + WebSocket Signaling + STUN（Cloudflare / Google）
 ```
 
 ### 1.4 AI 辅助开发方法
@@ -132,19 +134,28 @@ AI 服务：并行智算云 DeepSeek-V3.2 (兼容 OpenAI 格式)
 - **FR8.2** 按分类筛选历史
 - **FR8.3** 删除历史记录
 
+#### FR9: WebRTC 算法 1v1 竞赛
+- **FR9.1** 每个算法入口提供对应的 1v1 竞赛，支持创建房间和输入 6 位房间号加入
+- **FR9.2** 房间最多容纳两名玩家；双方均点击“准备”后，后端同时开放题目并开始计时
+- **FR9.3** 每场包含 3 道算法相关选择题，后端维护答案、校验答题顺序并执行权威判分
+- **FR9.4** WebSocket 仅用于 WebRTC Offer、Answer、ICE Candidate 等信令交换；答题进度和聊天优先通过 WebRTC DataChannel 点对点传输
+- **FR9.5** REST 轮询作为状态同步降级方案，即使 WebRTC 失败，创建、加入、准备、答题和结算仍可正常完成
+- **FR9.6** 支持刷新恢复比赛、房间号复制、离开确认、断线 15 秒重连宽限、超时判负和赛后“再来一局”
+- **FR9.7** 开赛前接口不返回题目内容，防止用户提前查看题目；计时和速度奖励均以后端时间为准
+
 ### 2.2 非功能需求
 
 | 类别 | 要求 |
 |------|------|
 | 性能 | 排序算法支持最多 100 个元素的实时可视化；图算法支持 20 节点以内的流畅渲染 |
 | 可用性 | 响应式布局，支持现代浏览器（Chrome 90+, Edge 90+, Firefox 90+） |
-| 可靠性 | 后端错误友好提示（"请确认后端服务已启动"），前端 loading/empty/error 三态覆盖 |
-| 安全性 | 密码加盐哈希存储，CORS 限制 localhost:4200，N 皇后 N 上限 12 防止资源耗尽 |
+| 可靠性 | 后端错误友好提示；前端 loading/empty/error 三态覆盖；竞赛采用 WebRTC + REST 轮询双通道并支持信令自动重连 |
+| 安全性 | 密码加盐哈希存储，CORS/WebSocket Origin 限制，竞赛答案仅保存在服务端，N 皇后 N 上限 12 防止资源耗尽 |
 | 可维护性 | 单体架构，分层清晰（Controller → Service → Repository），前后端分离 |
 
 ### 2.3 用户角色
 
-- **学习者**：核心用户。通过可视化理解算法原理，使用评估测试自检学习效果
+- **学习者**：核心用户。通过可视化理解算法原理，使用评估测试自检，并通过 1v1 竞赛进行即时练习
 - **教师/助教**：可借助对比模式在课堂上演示不同算法的效率差异
 - **开发者**：可使用 AI 复杂度分析快速估算自定义算法的复杂度
 
@@ -254,6 +265,16 @@ AI 服务：并行智算云 DeepSeek-V3.2 (兼容 OpenAI 格式)
 - 同分类限制保持了布局的简洁性（左右对半分割）
 - 教学上也有意义：快速排序 vs 归并排序 是排序算法内部效率对比
 
+#### ADR-6: 竞赛采用“服务端权威状态 + WebRTC 实时通道”
+
+**决策**：房间、准备状态、题目、计时、判分和排名由 Spring Boot 服务端统一管理；WebSocket 仅承担 WebRTC 信令交换，DataChannel 用于玩家间的进度通知和聊天。前端同时以 750ms 周期轮询房间状态作为降级机制。
+
+**原因**：
+- 判分不能信任点对点客户端，答案和服务器计时必须保留在后端
+- WebRTC 适合低延迟的临时消息，但在 NAT、防火墙或 STUN 不可用时可能连接失败
+- REST 轮询保证 WebRTC 失败时核心比赛流程仍可使用
+- 信令层向双方发送对手存在事件，并以较小的用户 ID 作为唯一 Offer 发起方，避免漏协商和双 Offer 冲突
+
 ### 3.3 数据流
 
 ```
@@ -303,13 +324,31 @@ phase 变化检测
                       更新阶段进度条
 ```
 
+**1v1 竞赛数据流：**
+
+```text
+玩家 A                     Spring Boot / WebSocket                    玩家 B
+  │ POST /rooms 创建房间              │                                 │
+  │◄──── 房间号 + waiting ────────────│                                 │
+  │                                    │◄──── POST /rooms/{id}/join ─────│
+  │◄──── WebSocket: join-room ─────────│──── peer-present ───────────────►│
+  │                                    │                                 │
+  │──── WebRTC Offer ─────────────────►│────────────────────────────────►│
+  │◄───────────────────────────────────│◄──────────── WebRTC Answer ─────│
+  │◄════════════════ WebRTC DataChannel（进度 / 聊天）══════════════════►│
+  │                                    │                                 │
+  │──── ready / submit（REST）────────►│◄──────── ready / submit（REST）─│
+  │        后端按服务器时间判分、更新玩家进度和最终排名                   │
+  │◄──── GET room / result ────────────│──────── GET room / result ─────►│
+```
+
 ### 3.4 组件树
 
 ```
 AppComponent
 ├── AuthComponent                          ← 登录/注册表单
 ├── Header                                 ← Logo + Tab导航 + 用户头像 + 退出
-│   └── Tabs: [可视化 | 评估测试 | 历史记录 | AI复杂度分析]
+│   └── Tabs: [可视化 | 1v1竞赛 | 评估测试 | 历史记录 | AI复杂度分析]
 ├── ErrorBanner                            ← 错误提示横幅
 ├── SidebarComponent                       ← 算法分类列表
 │   ├── 分类标题（排序/搜索/图/DP/回溯/分治/3D数据结构）
@@ -330,7 +369,8 @@ AppComponent
 │   │   ├── DivideConquerVisualizerComponent ← 递归树
 │   │   └── Vr3dVisualizerComponent        ← Three.js 3D 渲染
 │   ├── HistoryPanelComponent              ← 运行历史列表（Tab 切换）
-│   └── AssessmentComponent                ← 5 题评估测试（Tab 切换）
+│   ├── AssessmentComponent                ← 评估测试（Tab 切换）
+│   └── CompetitionComponent               ← 1v1 房间、答题、聊天和排名
 └── AiComplexityDialogComponent            ← AI 复杂度分析弹窗（条件显示）
 ```
 
@@ -353,6 +393,13 @@ Controller 层
 ├── AuthController
 │   ├── POST /api/auth/register             → AuthService
 │   └── POST /api/auth/login                → AuthService
+├── CompetitionController
+│   ├── POST /api/competition/rooms         → 创建房间
+│   ├── POST /rooms/{id}/join|ready|leave   → 房间生命周期
+│   ├── POST /rooms/{id}/submit             → 权威判分
+│   └── GET  /rooms/{id}|result             → 状态与排名
+└── SignalingHandler
+    └── WS /ws/signaling                    → WebRTC 信令中继与断线宽限
 
 Service 层
 ├── SortingService        → 5 种排序算法的步骤生成
@@ -362,7 +409,8 @@ Service 层
 ├── BacktrackingService   → N 皇后回溯步骤生成
 ├── DivideConquerService  → Karatsuba 大整数乘法步骤生成
 ├── AlgorithmComplexityService → AI 大模型复杂度分析
-└── AuthService           → 用户注册/登录 + SHA-256 加盐哈希
+├── AuthService           → 用户注册/登录 + SHA-256 加盐哈希
+└── CompetitionRoomService → 内存房间、题库、准备、计时、判分、排名和过期清理
 
 Model 层
 ├── SortStep.java         → 排序步骤（array, comparing, swapping, sorted, pivot, phase...）
@@ -371,7 +419,10 @@ Model 层
 ├── DPStep.java           → DP 步骤（dp[][], currentItem, currentWeight, decision, phase...）
 ├── NQueensStep.java      → 回溯步骤（board[], currentRow, conflicts, solutions, phase...）
 ├── DivideConquerStep.java → 分治步骤（tree, currentNodeId, a/b/c/d, z2/z1/z0, phase...）
-└── AlgorithmComplexityAnalysis.java → AI 复杂度分析结果
+├── AlgorithmComplexityAnalysis.java → AI 复杂度分析结果
+├── CompetitionRoom.java   → 房间状态、玩家、题目和时间戳
+├── CompetitionPlayer.java → 玩家准备、得分、进度、耗时和弃权状态
+└── CompetitionQuestion.java → 竞赛题目（不包含答案）
 
 Entity 层
 ├── AppUser.java          → JPA 实体（id, username, displayName, passwordHash, passwordSalt）
@@ -387,7 +438,11 @@ DTO 层
 ├── AlgorithmComplexityRequest.java
 ├── AuthRequest.java
 ├── AuthResponse.java
-└── RegisterRequest.java
+├── RegisterRequest.java
+├── CreateCompetitionRoomRequest.java
+├── JoinCompetitionRoomRequest.java
+├── CompetitionSubmitRequest.java
+└── CompetitionSubmitResponse.java
 
 Repository 层
 ├── AppUserRepository.java     → findByUsername, existsByUsername
@@ -542,9 +597,59 @@ Vr3dVisualizerComponent (Angular 容器 — 管理 Three.js 场景生命周期)
 - **二叉树生成修复**：修复了随机生成时可能产生非法 BST 的问题。`AlgorithmStore.randomVr3dData()` 改为先生成不重复的数值集合（`new Set`），再通过 `toBinarySearchTreeValues()` 转换为符合 BST 插入顺序的值序列，确保渲染的二叉树结构正确
 - **VR-3D 可视化器重构**：`vr-3d-visualizer.component.ts` 经历 577 行重构，改善了组件结构、操作卡片交互和 Three.js 场景生命周期管理
 
-### 4.8 统一响应格式
+### 4.8 WebRTC 算法 1v1 竞赛
 
-所有 POST 端点返回统一 JSON 结构：
+#### 4.8.1 房间状态机
+
+```text
+waiting ──第二名玩家加入──► ready-check ──双方准备──► playing ──双方完成/一方退出──► finished
+   ▲                                │
+   └──── 等待阶段玩家退出后重置 ─────┘
+```
+
+- 房间号为随机生成的 6 位大写字符串，最多两名玩家
+- `waiting` 和 `ready-check` 阶段退出会释放席位；`playing` 阶段退出会被标记为 `forfeited`
+- 等待房间空闲 30 分钟、比赛中房间空闲 2 小时、已结束房间空闲 1 小时后自动清理
+- 浏览器刷新时，前端通过 `sessionStorage` 保存的房间号恢复比赛；WebSocket 断线提供 15 秒重连宽限
+
+#### 4.8.2 题目与公平性
+
+每种算法在服务端生成 3 道题：复杂度判断、状态推演和应用场景选择。题目对象不保存答案，答案表由 `CompetitionRoomService` 单独维护。
+
+- 开赛前公开房间视图只返回 `questionCount`，`questions` 为空，避免提前泄题
+- 后端强制按 `q1 → q2 → q3` 顺序提交，并对重复提交返回原判定但不重复加分
+- 客户端不提交计时字段；真实耗时由服务端根据每题开始时间计算
+- 最终排名依次比较：是否弃权、总分、答对数、总耗时
+
+#### 4.8.3 得分规则
+
+| 题目 | 基础分 |
+|------|-------:|
+| 第 1 题：复杂度判断 | 100 |
+| 第 2 题：状态推演 | 120 |
+| 第 3 题：应用场景 | 100 |
+
+正确答案获得基础分，并附加速度奖励：
+
+```text
+速度奖励 = max(0, 20 - floor(服务端耗时毫秒 / 5000))
+单题得分 = 回答正确 ? 基础分 + 速度奖励 : 0
+```
+
+基础满分为 320 分，每题速度奖励最高 20 分，因此理论最高分为 **380 分**。超过 300 分属于正常结果，并非重复计分。
+
+#### 4.8.4 WebRTC 与降级策略
+
+1. 两名玩家通过 `/ws/signaling` 交换 Offer、Answer 和 ICE Candidate
+2. 信令服务同时向房主发送 `join-room`、向加入者发送 `peer-present`
+3. 用户 ID 较小的一方作为唯一 Offer 发起者，建立 `competition` DataChannel
+4. DataChannel 传输 `ready`、`progress`、`submitted` 和 `chat` 消息
+5. 前端每 750ms 获取一次权威房间状态；WebRTC 失败仅影响即时聊天，不影响答题、判分和结算
+6. 默认 STUN 为 Cloudflare 与 Google；跨复杂 NAT 的生产环境应配置 TURN 服务
+
+### 4.9 统一响应格式
+
+所有算法执行类 POST 端点返回统一 JSON 结构；认证、评估和竞赛端点使用各自的业务响应 DTO：
 
 ```json
 {
@@ -556,7 +661,7 @@ Vr3dVisualizerComponent (Angular 容器 — 管理 Three.js 场景生命周期)
 }
 ```
 
-### 4.9 错误处理与用户反馈
+### 4.10 错误处理与用户反馈
 
 | 层级 | 策略 |
 |------|------|
@@ -564,12 +669,13 @@ Vr3dVisualizerComponent (Angular 容器 — 管理 Three.js 场景生命周期)
 | 前端校验 | 输入参数（N 皇后 1-12、背包容量>0 等）在 InputConfig 组件中限制范围；认证表单在 `AuthStore.register()` 中校验密码一致性 |
 | 前端正向反馈 | `AuthStore` 的 `success` 信号用于注册成功后的绿色提示条，与红色的 `error` 信号并列，形成完整的双通道用户反馈 |
 | 后端校验 | DTO 使用 `jakarta.validation` 注解（`@NotNull`, `@NotEmpty`, `@Positive`, `@Min/@Max`） |
-| 后端异常 | Service 层 `IllegalArgumentException` 返回 400 + 英文错误信息；认证失败返回 401 + 中文错误信息 |
-| CORS | 仅允许 `http://localhost:4200`，防止跨站请求 |
+| 后端异常 | Service 层参数错误返回 400；状态冲突返回 409；竞赛与认证接口返回中文错误信息 |
+| CORS | REST 与 WebSocket 共享可配置的 `app.cors.allowed-origin` 来源限制 |
+| 竞赛连接 | WebSocket 信令自动重连；忽略旧 Socket/Peer/DataChannel 的迟到关闭事件；12 秒未建立 DataChannel 时显示明确降级提示 |
 
 ---
 
-### 4.10 遇到的问题与改进
+### 4.11 遇到的问题与改进
 
 #### 问题 1：注册后自动登录的会话安全问题
 
@@ -675,15 +781,14 @@ JPA 的 `ddl-auto=update` 会在应用启动时自动创建/更新数据表（`a
 
 ### 5.3 后端配置
 
-编辑 `backend/src/main/resources/application.properties`：
+保留 `backend/src/main/resources/application.properties` 中的环境变量占位符，并在运行环境中设置：
 
-```properties
+```bash
 # 必填：数据库密码
-spring.datasource.password=你的MySQL密码
+export DB_PASSWORD=你的MySQL密码
 
 # 可选：AI API Key（不配置则 AI 复杂度分析功能不可用）
 ai.complexity.api-key=你的API密钥
-```
 
 ### 5.4 后端启动
 
@@ -873,6 +978,38 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 # 应返回包含 steps、stepCount 等字段的 JSON
 ```
 
+### 5.10 WebRTC 生产部署注意事项
+
+Nginx 除了代理 `/api`，还必须为信令端点启用 WebSocket Upgrade：
+
+```nginx
+location /ws/signaling {
+    proxy_pass http://backend:8080/ws/signaling;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 3600s;
+}
+```
+
+后端通过 `app.cors.allowed-origin` 同时限制 REST 和 WebSocket 来源。生产环境应设置为真实前端域名，例如：
+
+```properties
+app.cors.allowed-origin=https://example.com
+```
+
+前端默认配置 Cloudflare 和 Google STUN。STUN 不能覆盖所有 NAT、防火墙和企业网络场景；公网部署若要求稳定的点对点连接，应在 `environment.prod.ts` 的 `rtcIceServers` 中加入自建或托管 TURN：
+
+```typescript
+rtcIceServers: [
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'turn:turn.example.com:3478', username: 'user', credential: 'secret' },
+]
+```
+
+TURN 凭据不应长期硬编码在公开前端仓库中，正式系统宜通过短期凭据服务动态下发。
+
 ---
 
 ## 6. 使用指南
@@ -995,6 +1132,30 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 2. 查看所有历史运行记录（默认最近 20 条）
 3. 使用分类下拉框筛选特定分类
 4. 点击删除按钮移除单条记录
+
+### 6.11 算法 1v1 竞赛
+
+1. 在侧边栏目标算法旁点击 `PK`，或点击顶部“1v1 竞赛”进入竞赛大厅
+2. 从“竞赛算法”下拉框按分类选择算法；侧边栏快捷 PK 会自动带入对应算法
+3. 一名玩家点击“创建房间”，复制 6 位房间号并发送给另一名已登录用户
+4. 对手输入房间号加入；房主通常在 750ms 内看到玩家列表更新
+5. 双方点击“准备”，比赛自动进入 `playing` 状态并同时下发 3 道题
+6. 每题选择答案并提交；提交后显示正确答案、本题得分和累计进度
+7. 双方完成后显示排名、得分、答对数和服务端统计耗时，可点击“再来一局”
+
+**连接状态说明：**
+
+| 显示状态 | 含义 |
+|---------|------|
+| 信令已连接，等待对手 | WebSocket 正常，尚无第二名玩家 |
+| 已发现对手，正在协商连接 | 双方正在交换 Offer/Answer/ICE Candidate |
+| 实时连接正常 | WebRTC DataChannel 已打开，可使用即时进度和聊天 |
+| 点对点连接失败（答题不受影响） | STUN/TURN 或网络限制导致 P2P 失败，系统自动使用 REST 轮询维持核心比赛 |
+
+**使用限制：**
+- 两个参赛窗口必须登录不同账号；同一账号不会占用两个玩家席位
+- 比赛中离开会被判负；页面刷新可在 15 秒重连宽限内恢复
+- 当前房间保存在后端内存中，后端重启后未结束房间会失效
 
 ---
 
@@ -1306,7 +1467,82 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 { "id": 1, "username": "alice", "displayName": "Alice" }
 ```
 
-### 7.8 错误响应
+### 7.8 1v1 竞赛端点
+
+#### 房间生命周期
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/competition/rooms` | 创建房间 |
+| POST | `/api/competition/rooms/{roomId}/join` | 加入房间 |
+| POST | `/api/competition/rooms/{roomId}/ready` | 标记玩家准备 |
+| GET | `/api/competition/rooms/{roomId}` | 获取公开房间状态 |
+| POST | `/api/competition/rooms/{roomId}/leave` | 离开房间；比赛中离开将判负 |
+| POST | `/api/competition/rooms/{roomId}/submit` | 提交当前题答案 |
+| GET | `/api/competition/rooms/{roomId}/result` | 获取已结束比赛的排名 |
+
+**创建房间：**
+
+```json
+// POST /api/competition/rooms
+{
+  "algorithm": "quick-sort",
+  "userId": 1,
+  "displayName": "Alice"
+}
+```
+
+等待阶段响应中的 `questions` 为空，仅公开题目数量：
+
+```json
+{
+  "roomId": "A1B2C3",
+  "algorithm": "quick-sort",
+  "status": "waiting",
+  "questionCount": 3,
+  "players": [
+    { "userId": 1, "displayName": "Alice", "ready": false, "score": 0 }
+  ],
+  "questions": []
+}
+```
+
+**提交答案：**
+
+```json
+// POST /api/competition/rooms/A1B2C3/submit
+{
+  "userId": 1,
+  "questionId": "quick-sort-q1",
+  "answer": "O(n log n)"
+}
+
+// 响应；实际计时以后端为准
+{
+  "correct": true,
+  "correctAnswer": "O(n log n)",
+  "awardedPoints": 120,
+  "score": 120,
+  "duplicate": false
+}
+```
+
+#### WebSocket 信令
+
+连接地址：`ws://localhost:8080/ws/signaling`，生产环境使用 `wss://<domain>/ws/signaling`。
+
+| 消息类型 | 方向 | 用途 |
+|---------|------|------|
+| `join-room` | 客户端 → 服务端 → 已在线对手 | 注册信令会话并通知旧玩家 |
+| `peer-present` | 服务端 → 新加入玩家 | 告知新玩家房间中已有对手 |
+| `offer` | 点对点信令中继 | SDP Offer |
+| `answer` | 点对点信令中继 | SDP Answer |
+| `ice-candidate` | 点对点信令中继 | ICE Candidate |
+| `peer-left` | 服务端 → 对手 | 对手信令连接已断开 |
+
+加入信令前，服务端会校验 `userId` 是否已通过 REST 加入该房间。信令断开后若 15 秒内没有同一用户的新会话，服务端执行离开/判负逻辑。
+
+### 7.9 错误响应
 
 所有端点遵循统一的错误格式：
 
@@ -1314,6 +1550,7 @@ curl -X POST http://localhost:8080/api/algorithms/sort \
 |------------|------|-----------|
 | 400 Bad Request | 参数校验失败 | `{"error": "..."}` 或 Spring Validation 默认格式 |
 | 401 Unauthorized | 登录失败 | `{"message": "用户名或密码不正确。"}` |
+| 409 Conflict | 房间已满、比赛已开始、答题顺序错误等状态冲突 | `{"message": "请按顺序提交题目"}` |
 | 500 Internal Server Error | 服务端异常 | Spring Boot 默认错误格式 |
 
 ---
@@ -1386,6 +1623,15 @@ CREATE TABLE run_history (
 - `app_user.uk_app_user_username` — 唯一索引，加速登录查询
 - `run_history` 表的 `category` 和 `created_at` 字段应建立复合索引以优化按分类查询历史（当前 JPA 默认无显式索引，建议生产环境添加）
 
+### 8.4 竞赛数据存储说明
+
+当前版本的竞赛房间、答案表和提交记录存放在 `CompetitionRoomService` 的并发内存 Map 中，不写入 MySQL。因此后端重启会清空未结束房间，且多实例部署时不同实例之间不能直接共享房间状态。
+
+若后续需要竞赛历史、排行榜或后端水平扩展，建议：
+- 使用 Redis 保存活动房间、玩家心跳和短期提交状态
+- 使用 MySQL 持久化已结束比赛、每题结果和最终排名
+- 通过 Redis Pub/Sub 或专用消息系统同步不同后端实例上的 WebSocket 信令事件
+
 ---
 
 ## 9. 文件清单
@@ -1395,9 +1641,12 @@ CREATE TABLE run_history (
 | 文件路径 | 职责 |
 |---------|------|
 | `AlgorithmVizApplication.java` | Spring Boot 应用入口 |
-| `config/CorsConfig.java` | CORS 跨域配置（允许 localhost:4200） |
+| `config/CorsConfig.java` | REST CORS 来源配置 |
+| `config/WebSocketConfig.java` | 注册 `/ws/signaling` 并配置 WebSocket Origin |
 | `controller/AlgorithmController.java` | 核心控制器：6 个算法执行端点 + verify-step + history CRUD + health |
 | `controller/AuthController.java` | 认证控制器：register + login |
+| `controller/CompetitionController.java` | 竞赛房间、准备、提交和排名 REST API |
+| `websocket/SignalingHandler.java` | WebRTC 双向信令中继、会话绑定和 15 秒断线宽限 |
 | `service/SortingService.java` | 5 种排序算法步骤生成（quick/merge/bubble/heap/insertion） |
 | `service/SearchService.java` | 二分查找步骤生成 |
 | `service/GraphService.java` | 6 种图算法步骤生成（Dijkstra/BFS/DFS/Prim/Kruskal/A\*） |
@@ -1407,6 +1656,7 @@ CREATE TABLE run_history (
 | `service/AlgorithmComplexityService.java` | AI 大模型复杂度分析服务 |
 | `service/AssessmentService.java` | LLM 评估服务：动态出题 + 语义评测 + 交叉验证（独立于 AlgorithmComplexityService） |
 | `service/AuthService.java` | 用户认证服务（注册/登录 + SHA-256 加盐哈希） |
+| `service/CompetitionRoomService.java` | 竞赛题库、内存房间状态机、服务端计时判分、排名和过期清理 |
 | `model/SortStep.java` | 排序步骤模型（含 Builder、phase） |
 | `model/SearchStep.java` | 搜索步骤模型（含 Builder、phase） |
 | `model/GraphStep.java` | 图步骤模型（含 Builder、phase） |
@@ -1416,6 +1666,9 @@ CREATE TABLE run_history (
 | `model/AlgorithmComplexityAnalysis.java` | AI 分析结果模型（含 Builder） |
 | `model/AssessmentQuestion.java` | LLM 生成的评估题目模型（含 Builder） |
 | `model/AnswerEvaluationResponse.java` | LLM 评测结果模型（含 Builder） |
+| `model/CompetitionRoom.java` | 竞赛房间模型 |
+| `model/CompetitionPlayer.java` | 竞赛玩家状态模型 |
+| `model/CompetitionQuestion.java` | 不含答案的公开竞赛题目模型 |
 | `entity/RunHistory.java` | 运行历史 JPA 实体 |
 | `entity/AppUser.java` | 用户 JPA 实体 |
 | `dto/SortRequest.java` | 排序请求 DTO |
@@ -1430,6 +1683,10 @@ CREATE TABLE run_history (
 | `dto/AuthRequest.java` | 登录请求 DTO |
 | `dto/AuthResponse.java` | 认证响应 DTO |
 | `dto/RegisterRequest.java` | 注册请求 DTO |
+| `dto/CreateCompetitionRoomRequest.java` | 创建竞赛房间请求 DTO |
+| `dto/JoinCompetitionRoomRequest.java` | 加入竞赛房间请求 DTO |
+| `dto/CompetitionSubmitRequest.java` | 竞赛答案提交 DTO |
+| `dto/CompetitionSubmitResponse.java` | 判分结果 DTO |
 | `repository/RunHistoryRepository.java` | 运行历史 JPA Repository |
 | `repository/AppUserRepository.java` | 用户 JPA Repository |
 
@@ -1443,10 +1700,15 @@ CREATE TABLE run_history (
 | `app.routes.ts` | 路由定义 |
 | `store/algorithm.store.ts` | 核心状态管理：信号定义、算法运行、Phase 系统、对比模式、播放控制 |
 | `store/auth.store.ts` | 认证状态管理 |
+| `store/competition.store.ts` | 竞赛状态管理：房间恢复、轮询、答题、排名、连接状态和聊天 |
 | `services/algorithm.service.ts` | 后端 API HTTP 客户端 |
 | `services/auth.service.ts` | 认证 API HTTP 客户端 |
+| `services/competition.service.ts` | 竞赛 REST API 客户端 |
+| `services/webrtc-peer.service.ts` | WebSocket 信令、WebRTC DataChannel、ICE 重连和旧连接事件隔离 |
 | `models/algorithm.models.ts` | TypeScript 类型定义（16 个接口 + 类型别名） |
+| `models/competition.models.ts` | 竞赛房间、玩家、题目和实时消息类型 |
 | `data/test-scenarios.ts` | 5 道经典固定评估测试题数据 |
+| `data/algorithm-catalog.ts` | 侧边栏与竞赛大厅共享的算法分类、名称和复杂度目录 |
 | `components/sidebar/sidebar.component.ts` | 侧边栏：算法选择列表、对比模式开关 |
 | `components/control-panel/control-panel.component.ts` | 播放控制栏 |
 | `components/input-config/input-config.component.ts` | 输入数据编辑面板 |
@@ -1457,6 +1719,7 @@ CREATE TABLE run_history (
 | `components/assessment-container/assessment-settings/assessment-settings.component.ts` | 评估配置面板：题数/分类/难度/题型 |
 | `components/assessment/assessment.component.ts` | 评估答题组件：动态题目+AI评测+固定题降级 |
 | `components/auth/auth.component.ts` | 登录/注册表单 |
+| `components/competition/competition.component.ts` | 1v1 竞赛房间、答题、聊天和结果界面 |
 | `components/ai-complexity-dialog/ai-complexity-dialog.component.ts` | AI 复杂度分析弹窗 |
 | `visualizers/sorting/sorting-visualizer.component.ts` | 排序可视化器（柱状图/Canvas） |
 | `visualizers/graph/graph-visualizer.component.ts` | 图可视化器（SVG 节点/边） |
@@ -1482,13 +1745,13 @@ CREATE TABLE run_history (
 
 | 文件 | 说明 |
 |------|------|
-| `backend/pom.xml` | Maven 项目配置（Spring Boot 3.2.3, Java 17） |
+| `backend/pom.xml` | Maven 项目配置（Spring Boot 3.2.3、WebSocket、Java 17） |
 | `backend/src/main/resources/application.properties` | Spring Boot 配置（数据源/JPA/Jackson/AI） |
 | `frontend/package.json` | npm 依赖和脚本 |
 | `frontend/angular.json` | Angular CLI 配置 |
 | `frontend/tailwind.config.js` | Tailwind CSS 配置 |
-| `frontend/src/environments/environment.ts` | 开发环境变量（apiUrl=`http://localhost:8080/api`） |
-| `frontend/src/environments/environment.prod.ts` | 生产环境变量（apiUrl=`/api`，Nginx 同源代理） |
+| `frontend/src/environments/environment.ts` | 开发环境变量（API 地址 + WebRTC ICE Servers） |
+| `frontend/src/environments/environment.prod.ts` | 生产环境变量（同源 API + WebRTC ICE Servers） |
 | `frontend/src/styles.css` | 全局 Tailwind 样式入口 |
 | `frontend/src/assets/login-bg.png` | 登录页背景图（约 1.7MB，全屏覆盖 + 渐变遮罩） |
 | `docs/learning-guidance-system.md` | 学习引导系统独立设计文档 |
@@ -1500,4 +1763,4 @@ CREATE TABLE run_history (
 
 ---
 
-> **文档维护说明**：本文档描述项目截至 2026-06-09 的全貌。代码变更后请同步更新相关章节。此文档整合了 `docs/部署文档.md` 的部署内容，可作为 PPT 汇报的基础材料。
+> **文档维护说明**：本文档描述项目截至 2026-06-19 的全貌。代码变更后请同步更新相关章节。此文档整合了 `docs/部署文档.md` 的部署内容，可作为 PPT 汇报的基础材料。

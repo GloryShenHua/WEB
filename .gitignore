@@ -37,6 +37,11 @@ Thumbs.db
 application-local.properties
 application-local.yml
 
-.gitignore
+# Local development server logs
+backend/spring-dev.log
+backend/spring-dev.err
+frontend/angular-dev.log
+frontend/angular-dev.err
+
 temp/
 deploy/

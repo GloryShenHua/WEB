@@ -19,6 +19,8 @@ import { HistoryPanelComponent } from './components/history-panel/history-panel.
 import { AssessmentContainerComponent } from './components/assessment-container/assessment-container.component';
 import { Vr3dVisualizerComponent } from './visualizers/vr-3d/vr-3d-visualizer.component';
 import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/ai-complexity-dialog.component';
+import { CompetitionComponent } from './components/competition/competition.component';
+import { CompetitionStore } from './store/competition.store';
 
 @Component({
   selector: 'app-root',
@@ -42,6 +44,7 @@ import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/a
     AssessmentContainerComponent,
     Vr3dVisualizerComponent,
     AiComplexityDialogComponent,
+    CompetitionComponent,
   ],
   templateUrl: './app.component.html',
 })
@@ -49,6 +52,7 @@ export class AppComponent implements OnInit {
   tabs = [
     { id: 'ai-complexity' as const, label: '复杂度分析', icon: 'AI', type: 'action' as const },
     { id: 'visualizer' as const, label: '可视化学习', icon: '3D', type: 'panel' as const },
+    { id: 'competition' as const, label: '1v1 竞赛', icon: 'PK', type: 'panel' as const },
     { id: 'assessment' as const, label: '评估测试', icon: 'Test', type: 'panel' as const },
     { id: 'history' as const, label: '历史记录', icon: 'Log', type: 'panel' as const },
   ];
@@ -71,7 +75,16 @@ export class AppComponent implements OnInit {
     };
   });
 
-  constructor(public store: AlgorithmStore, public auth: AuthStore) {}
+  constructor(
+    public store: AlgorithmStore,
+    public auth: AuthStore,
+    public competition: CompetitionStore,
+  ) {}
+
+  logout(): void {
+    this.competition.leaveRoom();
+    this.auth.logout();
+  }
 
   ngOnInit(): void {}
 }
