@@ -47,7 +47,7 @@ import { AiComplexityDialogComponent } from './components/ai-complexity-dialog/a
 })
 export class AppComponent implements OnInit {
   tabs = [
-    { id: 'ai-complexity' as const, label: '复杂度分析', icon: 'AI', type: 'action' as const },
+    { id: 'ai-complexity' as const, label: '学习助手', icon: 'AI', type: 'action' as const },
     { id: 'visualizer' as const, label: '可视化学习', icon: '3D', type: 'panel' as const },
     { id: 'assessment' as const, label: '评估测试', icon: 'Test', type: 'panel' as const },
     { id: 'history' as const, label: '历史记录', icon: 'Log', type: 'panel' as const },
