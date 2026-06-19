@@ -13,4 +13,6 @@ public class AlgorithmComplexityRequest {
     private String language = "pseudocode";
 
     private String caseType = "worst";
+
+    private Long sessionId;
 }

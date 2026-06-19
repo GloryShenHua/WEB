@@ -199,6 +199,7 @@ export interface AlgorithmComplexityRequest {
   code: string;
   language: string;
   caseType: string;
+  sessionId?: number;
 }
 
 export interface AlgorithmComplexityAnalysis {
@@ -295,4 +296,17 @@ export interface AnswerEvaluationResponse {
   feedback: string;
   correctAnswer: string;
   confidence: number;
+}
+
+export interface ChatSession {
+  id: number;
+  title: string;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
 }
