@@ -1,7 +1,6 @@
 import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlgorithmStore } from '../../store/algorithm.store';
-import { CompetitionStore } from '../../store/competition.store';
 import { AlgorithmId } from '../../models/algorithm.models';
 import { ALGORITHM_GROUPS } from '../../data/algorithm-catalog';
 
@@ -23,7 +22,7 @@ export class SidebarComponent {
     });
   });
 
-  constructor(public store: AlgorithmStore, private competition: CompetitionStore) {}
+  constructor(public store: AlgorithmStore) {}
 
   select(id: AlgorithmId): void {
     this.store.setAlgorithm(id);
@@ -31,9 +30,5 @@ export class SidebarComponent {
 
   selectCompare(id: AlgorithmId): void {
     this.store.compareAlgo.set(id);
-  }
-
-  startCompetition(id: AlgorithmId): void {
-    this.competition.openForAlgorithm(id);
   }
 }

@@ -95,21 +95,6 @@ export class CompetitionStore {
     this.restoreActiveRoom();
   }
 
-  openForAlgorithm(algorithm: AlgorithmId): void {
-    if (this.room()?.status === 'playing') {
-      this.algorithmStore.setActivePanel('competition');
-      this.error.set('当前比赛仍在进行，请先完成比赛或离开房间。');
-      return;
-    }
-    if (this.room()) {
-      this.leaveRoom();
-    }
-    this.selectedAlgorithm.set(algorithm);
-    this.algorithmStore.setAlgorithm(algorithm);
-    this.algorithmStore.setActivePanel('competition');
-    this.error.set(null);
-  }
-
   createRoom(): void {
     const user = this.requireUser();
     if (!user) return;
